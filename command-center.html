@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c26;
+  --surface3: #252533;
+  --border: #2e2e40;
+  --border2: #3a3a50;
+  --text: #e8e8f0;
+  --text2: #9898b0;
+  --text3: #5a5a70;
+  --accent: #6c63ff;
+  --accent2: #9b8dff;
+  --accent-dim: rgba(108,99,255,0.15);
+  --red: #ff4757;
+  --red-dim: rgba(255,71,87,0.15);
+  --orange: #ff9f43;
+  --orange-dim: rgba(255,159,67,0.15);
+  --yellow: #ffd32a;
+  --yellow-dim: rgba(255,211,42,0.12);
+  --cyan: #00d2d3;
+  --cyan-dim: rgba(0,210,211,0.12);
+  --green: #26de81;
+  --green-dim: rgba(38,222,129,0.12);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --transition: 0.18s ease;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* HEADER */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,10,15,0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  height: 56px;
+  display: flex; align-items: center; gap: 12px;
+}
+.header-logo { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--accent2); letter-spacing: 0.05em; white-space: nowrap; }
+.header-logo span { color: var(--text3); }
+.header-alerts { display: flex; gap: 8px; flex: 1; overflow: hidden; }
+.alert-pill { display: flex; align-items: center; gap: 6px; background: var(--red-dim); border: 1px solid rgba(255,71,87,0.3); color: var(--red); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: var(--transition); }
+.alert-pill:hover { background: rgba(255,71,87,0.25); }
+.alert-pill.orange { background: var(--orange-dim); border-color: rgba(255,159,67,0.3); color: var(--orange); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.btn-equipo { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); padding: 7px 14px; border-radius: var(--radius-sm); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; transition: var(--transition); white-space: nowrap; }
+.btn-equipo:hover { background: var(--surface3); color: var(--text); border-color: var(--accent); }
+.btn-ia { display: flex; align-items: center; gap: 6px; background: var(--accent-dim); border: 1px solid rgba(108,99,255,0.4); color: var(--accent2); padding: 7px 14px; border-radius: var(--radius-sm); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; transition: var(--transition); white-space: nowrap; }
+.btn-ia:hover { background: rgba(108,99,255,0.25); border-color: var(--accent); }
+.btn-new { display: flex; align-items: center; gap: 6px; background: var(--accent); color: white; padding: 7px 14px; border-radius: var(--radius-sm); cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; transition: var(--transition); white-space: nowrap; }
+.btn-new:hover { background: var(--accent2); transform: translateY(-1px); }
+.btn-settings { background: transparent; border: 1px solid var(--border); color: var(--text2); width: 36px; height: 36px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: var(--transition); }
+.btn-settings:hover { background: var(--surface2); color: var(--text); }
+
+/* STATS */
+.stats-bar { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; }
+.stat-item { flex: 1; min-width: 80px; padding: 12px 16px; border-right: 1px solid var(--border); text-align: center; }
+.stat-item:last-child { border-right: none; }
+.stat-value { font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700; line-height: 1; }
+.stat-value.red { color: var(--red); } .stat-value.orange { color: var(--orange); } .stat-value.cyan { color: var(--cyan); } .stat-value.green { color: var(--green); }
+.stat-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+
+/* CONTROLS */
+.controls { padding: 12px 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: var(--bg); border-bottom: 1px solid var(--border); }
+.view-tabs { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px; }
+.view-tab { padding: 5px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); color: var(--text2); background: transparent; border: none; font-family: 'DM Sans', sans-serif; }
+.view-tab.active { background: var(--surface3); color: var(--text); }
+.filter-select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: var(--transition); }
+.filter-select:focus { outline: none; border-color: var(--accent); }
+.filter-toggle { padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); background: var(--surface); border: 1px solid var(--border); color: var(--text2); font-family: 'DM Sans', sans-serif; }
+.filter-toggle.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent2); }
+
+/* MAIN */
+.main { padding: 16px; transition: margin-right 0.3s; }
+.main.ia-open { margin-right: 380px; }
+
+/* SECTION */
+.section-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin: 20px 0 8px; display: flex; align-items: center; gap: 8px; }
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.tasks-grid { display: flex; flex-direction: column; gap: 8px; }
+
+/* TASK CARD */
+.task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: var(--transition); position: relative; overflow: hidden; }
+.task-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.task-card:hover { border-color: var(--border2); background: var(--surface2); transform: translateX(2px); }
+.task-card.overdue { border-color: rgba(255,71,87,0.4); background: rgba(255,71,87,0.05); }
+.task-card.overdue::before { background: var(--red); }
+.task-card.today { border-color: rgba(255,159,67,0.4); background: rgba(255,159,67,0.05); }
+.task-card.today::before { background: var(--orange); }
+.task-card.urgent { border-color: rgba(255,211,42,0.3); background: rgba(255,211,42,0.04); }
+.task-card.urgent::before { background: var(--yellow); }
+.task-card.week::before { background: var(--cyan); }
+.task-card.completed { opacity: 0.5; }
+
+.task-header { display: flex; align-items: flex-start; gap: 10px; }
+.task-check { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border2); flex-shrink: 0; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+.task-check:hover { border-color: var(--green); background: var(--green-dim); }
+.task-check.checked { background: var(--green); border-color: var(--green); }
+.task-check.checked::after { content: '✓'; color: white; font-size: 11px; font-weight: 700; }
+.task-body { flex: 1; min-width: 0; }
+.task-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 6px; }
+.task-card.completed .task-title { text-decoration: line-through; color: var(--text3); }
+.task-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.badge.urgency-overdue { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,71,87,0.3); }
+.badge.urgency-today { background: var(--orange-dim); color: var(--orange); border: 1px solid rgba(255,159,67,0.3); }
+.badge.urgency-urgent { background: var(--yellow-dim); color: var(--yellow); border: 1px solid rgba(255,211,42,0.3); }
+.badge.cat { background: var(--surface3); border: 1px solid var(--border2); color: var(--text2); }
+.badge.prio-critico { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid rgba(255,71,87,0.25); }
+.badge.prio-alto { background: rgba(255,159,67,0.15); color: var(--orange); border: 1px solid rgba(255,159,67,0.25); }
+.badge.prio-medio { background: rgba(255,211,42,0.12); color: var(--yellow); border: 1px solid rgba(255,211,42,0.25); }
+.badge.prio-bajo { background: var(--surface3); color: var(--text3); border: 1px solid var(--border); }
+.badge.estado-bloqueado { background: rgba(255,71,87,0.1); color: #ff6b7a; border: 1px solid rgba(255,71,87,0.2); }
+.badge.estado-progreso { background: rgba(0,210,211,0.1); color: var(--cyan); border: 1px solid rgba(0,210,211,0.2); }
+
+.task-date { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.task-date.overdue { color: var(--red); } .task-date.today { color: var(--orange); } .task-date.urgent { color: var(--yellow); }
+.task-person { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); margin-top: 6px; }
+.person-dot { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; }
+.task-blocked { margin-top: 8px; padding: 6px 10px; background: rgba(255,71,87,0.08); border: 1px solid rgba(255,71,87,0.2); border-radius: var(--radius-sm); font-size: 11px; color: #ff8a93; display: flex; gap: 6px; align-items: flex-start; }
+.progress-bar { margin-top: 8px; height: 3px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+.progress-label { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+/* CARD ACTIONS ROW - visible on hover or always on mobile */
+.task-bottom-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); opacity: 0; transition: opacity var(--transition); }
+.task-card:hover .task-bottom-actions { opacity: 1; }
+@media (max-width: 768px) { .task-bottom-actions { opacity: 1; } }
+.btn-card-mail { display: flex; align-items: center; gap: 5px; padding: 5px 10px; background: var(--accent-dim); border: 1px solid rgba(108,99,255,0.3); color: var(--accent2); border-radius: var(--radius-sm); cursor: pointer; font-size: 11px; font-weight: 600; font-family: 'DM Sans', sans-serif; transition: var(--transition); }
+.btn-card-mail:hover { background: rgba(108,99,255,0.25); border-color: var(--accent); }
+.btn-card-mail:disabled { opacity: 0.4; cursor: not-allowed; }
+.task-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; opacity: 0; transition: var(--transition); }
+.task-card:hover .task-actions { opacity: 1; }
+.btn-delete { width: 24px; height: 24px; border-radius: 4px; background: var(--red-dim); border: 1px solid rgba(255,71,87,0.2); color: var(--red); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+.btn-delete:hover { background: rgba(255,71,87,0.25); }
+
+/* BOARD */
+.board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; min-height: 400px; }
+@media (max-width: 900px) { .board { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .board { grid-template-columns: 1fr; } }
+.board-col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.board-col-header { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.board-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text2); }
+.board-col-count { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text3); background: var(--surface3); padding: 2px 7px; border-radius: 10px; }
+.board-cards { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.board-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; cursor: pointer; transition: var(--transition); }
+.board-card:hover { border-color: var(--border2); background: var(--surface3); }
+.board-card-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+.board-card-meta { display: flex; gap: 5px; flex-wrap: wrap; }
+
+/* TIMELINE */
+.timeline-section { margin-bottom: 24px; }
+.timeline-header { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+.timeline-dot { width: 8px; height: 8px; border-radius: 50%; }
+.timeline-dot.red { background: var(--red); } .timeline-dot.orange { background: var(--orange); } .timeline-dot.cyan { background: var(--cyan); } .timeline-dot.accent { background: var(--accent); } .timeline-dot.gray { background: var(--text3); }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow); transform: translateY(20px); transition: transform 0.2s; }
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-header { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); border-radius: 14px 14px 0 0; z-index: 1; }
+.modal-title { font-size: 16px; font-weight: 700; }
+.btn-close { background: var(--surface3); border: none; color: var(--text2); width: 32px; height: 32px; border-radius: var(--radius-sm); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+.btn-close:hover { background: var(--border2); color: var(--text); }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; }
+.form-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 14px; font-family: 'DM Sans', sans-serif; transition: var(--transition); }
+.form-input:focus { outline: none; border-color: var(--accent); }
+.form-input::placeholder { color: var(--text3); }
+textarea.form-input { resize: vertical; min-height: 80px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+.form-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: var(--transition); }
+.form-select:focus { outline: none; border-color: var(--accent); }
+
+/* DATE PICKER CUSTOM */
+.date-picker-wrapper { position: relative; }
+.date-display { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 14px; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: var(--transition); user-select: none; }
+.date-display:hover, .date-display.open { border-color: var(--accent); }
+.date-display .placeholder { color: var(--text3); }
+.date-display .cal-icon { font-size: 16px; color: var(--text3); }
+.date-display .clear-date { color: var(--text3); font-size: 16px; margin-left: 6px; cursor: pointer; padding: 0 2px; }
+.date-display .clear-date:hover { color: var(--red); }
+.date-calendar { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); box-shadow: var(--shadow); z-index: 500; padding: 12px; display: none; min-width: 260px; }
+.date-calendar.open { display: block; }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-nav-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); width: 28px; height: 28px; border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+.cal-nav-btn:hover { background: var(--surface3); color: var(--text); }
+.cal-month-label { font-size: 13px; font-weight: 700; color: var(--text); }
+.cal-days-header { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
+.cal-day-name { text-align: center; font-size: 10px; font-weight: 700; color: var(--text3); padding: 4px 0; text-transform: uppercase; }
+.cal-days-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.cal-day { text-align: center; padding: 6px 2px; font-size: 12px; cursor: pointer; border-radius: 4px; color: var(--text2); transition: var(--transition); }
+.cal-day:hover { background: var(--surface2); color: var(--text); }
+.cal-day.today-mark { color: var(--accent2); font-weight: 700; }
+.cal-day.selected { background: var(--accent); color: white; font-weight: 700; }
+.cal-day.other-month { color: var(--text3); opacity: 0.5; }
+.cal-day.empty { cursor: default; }
+.cal-day.empty:hover { background: transparent; }
+
+/* SUBTASKS */
+.subtask-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 6px; }
+.subtask-check { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border2); cursor: pointer; flex-shrink: 0; transition: var(--transition); display: flex; align-items: center; justify-content: center; }
+.subtask-check:hover { border-color: var(--green); }
+.subtask-check.done { background: var(--green); border-color: var(--green); }
+.subtask-check.done::after { content: '✓'; color: white; font-size: 9px; font-weight: 700; }
+.subtask-text { flex: 1; font-size: 13px; }
+.subtask-text.done { text-decoration: line-through; color: var(--text3); }
+.btn-del-sub { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 0 2px; transition: var(--transition); }
+.btn-del-sub:hover { color: var(--red); }
+.add-subtask-row { display: flex; gap: 8px; }
+.add-subtask-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Sans', sans-serif; }
+.add-subtask-input:focus { outline: none; border-color: var(--accent); }
+.btn-add-sub { padding: 8px 14px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+
+.modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+.btn-save { padding: 10px 24px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif; transition: var(--transition); }
+.btn-save:hover { background: var(--accent2); }
+.btn-cancel { padding: 10px 16px; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; font-family: 'DM Sans', sans-serif; transition: var(--transition); }
+.btn-cancel:hover { background: var(--surface3); }
+
+/* IA PANEL */
+.ia-panel { position: fixed; top: 0; right: -400px; width: 380px; height: 100vh; background: var(--surface); border-left: 1px solid var(--border); z-index: 150; display: flex; flex-direction: column; transition: right 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow: -8px 0 32px rgba(0,0,0,0.4); }
+.ia-panel.open { right: 0; }
+@media (max-width: 768px) { .ia-panel { width: 100%; right: -100%; } .main.ia-open { margin-right: 0; } }
+.ia-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: var(--surface); }
+.ia-title { flex: 1; font-size: 14px; font-weight: 700; font-family: 'Space Mono', monospace; color: var(--accent2); }
+.ia-subtitle { font-size: 10px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
+.btn-close-ia { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); width: 32px; height: 32px; border-radius: var(--radius-sm); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+.btn-close-ia:hover { background: var(--surface3); }
+.ia-body { flex: 1; overflow-y: auto; padding: 16px; }
+.ia-section-title { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+.ia-quick-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+.ia-quick-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 12px 10px; border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; font-weight: 600; text-align: center; font-family: 'DM Sans', sans-serif; transition: var(--transition); line-height: 1.3; }
+.ia-quick-btn:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent2); }
+.ia-quick-btn .icon { font-size: 20px; display: block; margin-bottom: 4px; }
+.ia-followup-title { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; margin-top: 16px; }
+.ia-person-btns { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+.ia-person-btn { display: flex; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; transition: var(--transition); }
+.ia-person-btn:hover { background: var(--accent-dim); border-color: var(--accent); }
+.ia-person-name { font-weight: 600; flex: 1; }
+.ia-person-count { font-size: 11px; color: var(--text3); background: var(--surface3); padding: 2px 8px; border-radius: 10px; }
+.ia-messages { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.ia-msg { padding: 12px; border-radius: var(--radius-sm); font-size: 13px; line-height: 1.6; }
+.ia-msg.user { background: var(--accent-dim); border: 1px solid rgba(108,99,255,0.2); color: var(--text); margin-left: 20px; }
+.ia-msg.assistant { background: var(--surface2); border: 1px solid var(--border); color: var(--text); margin-right: 20px; }
+.ia-msg.loading { color: var(--text3); font-style: italic; }
+.ia-back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; color: var(--text2); font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; margin-bottom: 12px; padding: 4px 0; transition: var(--transition); }
+.ia-back-btn:hover { color: var(--text); }
+.ia-input-area { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+.ia-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Sans', sans-serif; resize: none; min-height: 40px; max-height: 100px; }
+.ia-input:focus { outline: none; border-color: var(--accent); }
+.btn-send { background: var(--accent); border: none; color: white; width: 40px; height: 40px; border-radius: var(--radius-sm); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+.btn-send:hover { background: var(--accent2); }
+.ia-api-note { font-size: 11px; color: var(--text3); text-align: center; padding: 8px; border-top: 1px solid var(--border); }
+.ia-api-link { color: var(--accent2); cursor: pointer; text-decoration: underline; }
+
+/* EQUIPO OVERLAY */
+.equipo-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.equipo-overlay.open { opacity: 1; pointer-events: all; }
+.equipo-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; width: 100%; max-width: 460px; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow); }
+.equipo-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); border-radius: 14px 14px 0 0; z-index: 1; }
+.equipo-title { font-size: 16px; font-weight: 700; }
+.equipo-body { padding: 20px; }
+.equipo-empty { text-align: center; padding: 30px; color: var(--text3); font-size: 13px; }
+
+/* SETTINGS */
+.settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.settings-overlay.open { opacity: 1; pointer-events: all; }
+.settings-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow); }
+.settings-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); border-radius: 14px 14px 0 0; z-index: 1; }
+.settings-title { font-size: 16px; font-weight: 700; }
+.settings-body { padding: 20px; }
+.settings-section { margin-bottom: 28px; }
+.settings-section-title { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.settings-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); margin-bottom: 6px; background: var(--surface2); border: 1px solid var(--border); }
+.settings-item-name { flex: 1; font-size: 13px; font-weight: 500; }
+.color-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.btn-del-setting { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; transition: var(--transition); }
+.btn-del-setting:hover { color: var(--red); }
+.add-setting-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.add-setting-input { flex: 1; min-width: 120px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Sans', sans-serif; }
+.add-setting-input:focus { outline: none; border-color: var(--accent); }
+.color-options { display: flex; gap: 6px; flex-wrap: wrap; }
+.color-option { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: var(--transition); }
+.color-option.selected, .color-option:hover { border-color: var(--text); }
+.btn-add-setting { padding: 8px 14px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+.person-avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; }
+
+/* MAIL RESULT MODAL */
+.mail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.mail-overlay.open { opacity: 1; pointer-events: all; }
+.mail-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; width: 100%; max-width: 540px; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow); }
+.mail-header { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface); border-radius: 14px 14px 0 0; }
+.mail-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.mail-body { padding: 20px; }
+.mail-content { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; font-size: 13px; line-height: 1.7; color: var(--text); white-space: pre-wrap; min-height: 120px; }
+.mail-content.loading { color: var(--text3); font-style: italic; }
+.mail-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+.btn-copy { padding: 9px 20px; background: var(--accent); color: white; border: none; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; transition: var(--transition); }
+.btn-copy:hover { background: var(--accent2); }
+.btn-copy.copied { background: var(--green); }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; margin-bottom: 4px; }
+.empty-state small { font-size: 12px; }
+.hidden { display: none !important; }
+@media (max-width: 600px) { .main { padding: 10px; } .controls { padding: 8px 10px; gap: 6px; } .header { padding: 0 10px; gap: 8px; } .header-logo { font-size: 11px; } }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-logo">CMD<span>CENTER</span></div>
+  <div class="header-alerts" id="headerAlerts"></div>
+  <div class="header-actions">
+    <button class="btn-equipo" onclick="openEquipo()">👥 Equipo</button>
+    <button class="btn-ia" onclick="toggleIA()">✦ IA</button>
+    <button class="btn-new" onclick="openModal()">+ Nuevo</button>
+    <button class="btn-settings" onclick="openSettings()" title="Ajustes">⚙</button>
+  </div>
+</header>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-value cyan" id="statActivos">0</div><div class="stat-label">Activos</div></div>
+  <div class="stat-item"><div class="stat-value red" id="statVencidos">0</div><div class="stat-label">Vencidos</div></div>
+  <div class="stat-item"><div class="stat-value orange" id="statBloqueados">0</div><div class="stat-label">Bloqueados</div></div>
+  <div class="stat-item"><div class="stat-value green" id="statCompletados">0</div><div class="stat-label">Completados</div></div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="view-tabs">
+    <button class="view-tab active" onclick="setView('lista')" id="tab-lista">Lista</button>
+    <button class="view-tab" onclick="setView('tablero')" id="tab-tablero">Tablero</button>
+    <button class="view-tab" onclick="setView('timeline')" id="tab-timeline">Timeline</button>
+  </div>
+  <select class="filter-select" id="filterCat" onchange="renderAll()"><option value="">Categoría</option></select>
+  <select class="filter-select" id="filterPrio" onchange="renderAll()">
+    <option value="">Prioridad</option>
+    <option value="Crítico">Crítico</option><option value="Alto">Alto</option><option value="Medio">Medio</option><option value="Bajo">Bajo</option>
+  </select>
+  <select class="filter-select" id="filterPerson" onchange="renderAll()"><option value="">Persona</option></select>
+  <button class="filter-toggle" id="toggleCompleted" onclick="toggleCompleted()">Mostrar completados</button>
+</div>
+
+<!-- MAIN -->
+<main class="main" id="mainContent">
+  <div id="viewLista"></div>
+  <div id="viewTablero" class="hidden"></div>
+  <div id="viewTimeline" class="hidden"></div>
+</main>
+
+<!-- IA PANEL -->
+<div class="ia-panel" id="iaPanel">
+  <div class="ia-header">
+    <div><div class="ia-title">✦ Asistente IA</div><div class="ia-subtitle">Análisis inteligente de pendientes</div></div>
+    <button class="btn-close-ia" onclick="toggleIA()">×</button>
+  </div>
+  <div class="ia-body" id="iaBody">
+    <div id="iaHome">
+      <div class="ia-section-title">Acciones rápidas</div>
+      <div class="ia-quick-btns">
+        <button class="ia-quick-btn" onclick="iaAction('priorizar')"><span class="icon">🎯</span>Priorizar mi día</button>
+        <button class="ia-quick-btn" onclick="iaAction('riesgos')"><span class="icon">⚠️</span>Riesgos críticos</button>
+        <button class="ia-quick-btn" onclick="iaAction('resumen')"><span class="icon">📋</span>Resumen ejecutivo</button>
+        <button class="ia-quick-btn" onclick="iaAction('cuellos')"><span class="icon">🔍</span>Cuellos de botella</button>
+      </div>
+      <div class="ia-followup-title">Follow-up por persona</div>
+      <div class="ia-person-btns" id="iaPersonBtns"></div>
+      <div class="ia-api-note">API Key: <span class="ia-api-link" onclick="changeApiKey()">configurar</span></div>
+    </div>
+    <div id="iaChat" class="hidden">
+      <button class="ia-back-btn" onclick="showIAHome()">← Volver</button>
+      <div class="ia-messages" id="iaMessages"></div>
+    </div>
+  </div>
+  <div class="ia-input-area">
+    <textarea class="ia-input" id="iaInput" placeholder="Preguntame sobre tus pendientes..." rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendIAMessage()}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+    <button class="btn-send" onclick="sendIAMessage()">→</button>
+  </div>
+</div>
+
+<!-- MODAL CREAR/EDITAR -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Nuevo pendiente</div>
+      <button class="btn-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Qué hay que hacer *</label>
+        <input class="form-input" id="fTitle" placeholder="Describí la tarea o compromiso..." />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Categoría</label>
+          <select class="form-select" id="fCat"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridad</label>
+          <select class="form-select" id="fPrio">
+            <option value="Medio">Medio</option><option value="Alto">Alto</option>
+            <option value="Crítico">Crítico</option><option value="Bajo">Bajo</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select class="form-select" id="fEstado">
+            <option value="Pendiente">Pendiente</option><option value="En progreso">En progreso</option>
+            <option value="Bloqueado">Bloqueado</option><option value="Completado">Completado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Asignado a / Esperando a</label>
+          <select class="form-select" id="fPerson"><option value="">— ninguno —</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha de vencimiento</label>
+          <div class="date-picker-wrapper" id="dpWrapperFecha">
+            <div class="date-display" id="dpDisplayFecha" onclick="toggleCal('Fecha')">
+              <span id="dpLabelFecha" class="placeholder">Seleccioná una fecha</span>
+              <span>
+                <span class="cal-icon">📅</span>
+                <span class="clear-date" id="dpClearFecha" onclick="event.stopPropagation();clearDate('Fecha')" style="display:none">×</span>
+              </span>
+            </div>
+            <div class="date-calendar" id="dpCalFecha"></div>
+            <input type="hidden" id="fDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Aviso anticipado</label>
+          <select class="form-select" id="fAviso">
+            <option value="">Sin aviso</option>
+            <option value="1">1 día antes</option>
+            <option value="3">3 días antes</option>
+            <option value="7">7 días antes</option>
+            <option value="14">14 días antes</option>
+            <option value="30">1 mes antes</option>
+            <option value="60">2 meses antes</option>
+            <option value="90">3 meses antes</option>
+            <option value="180">6 meses antes</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bloqueado por</label>
+        <input class="form-input" id="fBlocked" placeholder="¿Qué impide avanzar este tema?" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas</label>
+        <textarea class="form-input" id="fNotes" placeholder="Contexto, acuerdos, próximos pasos..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subtareas</label>
+        <div id="subtaskList"></div>
+        <div class="add-subtask-row">
+          <input class="add-subtask-input" id="subtaskInput" placeholder="Nueva subtarea..." onkeydown="if(event.key==='Enter')addSubtask()" />
+          <button class="btn-add-sub" onclick="addSubtask()">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveTask()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EQUIPO MODAL -->
+<div class="equipo-overlay" id="equipoOverlay" onclick="if(event.target===this)closeEquipo()">
+  <div class="equipo-modal">
+    <div class="equipo-header">
+      <div class="equipo-title">👥 Gestión de Equipo</div>
+      <button class="btn-close" onclick="closeEquipo()">×</button>
+    </div>
+    <div class="equipo-body">
+      <div style="margin-bottom:16px">
+        <div class="settings-section-title" style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">Personas del equipo</div>
+        <div id="equipoPersonList"></div>
+        <div id="equipoEmpty" class="equipo-empty hidden">No hay personas agregadas aún</div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">Agregar persona nueva</div>
+        <input class="add-setting-input" id="equipoNewName" placeholder="Nombre completo..." style="width:100%;margin-bottom:10px" onkeydown="if(event.key==='Enter')equipoAddPerson()" />
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:12px;color:var(--text3)">Color:</span>
+          <div class="color-options" id="equipoColorOptions"></div>
+        </div>
+        <button class="btn-add-setting" onclick="equipoAddPerson()" style="width:100%">+ Agregar al equipo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-modal">
+    <div class="settings-header">
+      <div class="settings-title">⚙ Ajustes</div>
+      <button class="btn-close" onclick="closeSettings()">×</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <div class="settings-section-title">Categorías</div>
+        <div id="catList"></div>
+        <div class="add-setting-row">
+          <input class="add-setting-input" id="newCatName" placeholder="Nombre de categoría..." />
+          <div class="color-options" id="catColorOptions"></div>
+        </div>
+        <div style="margin-top:8px"><button class="btn-add-setting" onclick="addCategory()">+ Agregar categoría</button></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">API Key de Anthropic (IA)</div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Para usar el panel de IA y la generación de emails, necesitás una API Key de Anthropic. Podés obtenerla en <strong>console.anthropic.com</strong></p>
+        <input class="form-input" id="settingsApiKey" type="password" placeholder="sk-ant-..." style="width:100%;margin-bottom:8px" />
+        <button class="btn-add-setting" onclick="saveApiKey()">Guardar API Key</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIL MODAL -->
+<div class="mail-overlay" id="mailOverlay" onclick="if(event.target===this)closeMailModal()">
+  <div class="mail-modal">
+    <div class="mail-header">
+      <div class="mail-title">✉️ <span id="mailModalTitle">Email generado por IA</span></div>
+      <button class="btn-close" onclick="closeMailModal()">×</button>
+    </div>
+    <div class="mail-body">
+      <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Revisá el email y copialo para enviarlo por el canal que prefieras.</p>
+      <div class="mail-content" id="mailContent">Generando email...</div>
+    </div>
+    <div class="mail-footer">
+      <button class="btn-cancel" onclick="closeMailModal()">Cerrar</button>
+      <button class="btn-copy" id="btnCopyMail" onclick="copyMail()">📋 Copiar email</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======================= DATA =======================
+const STORAGE_KEY = 'cmdcenter_v3';
+const COLORS = ['#6c63ff','#ff4757','#ff9f43','#26de81','#00d2d3','#ff6b9d','#a55eea','#fd9644','#2ed573','#1e90ff'];
+
+function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultData(); } catch { return defaultData(); } }
+function save(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+function defaultData() {
+  return {
+    tasks: [],
+    categories: [
+      { id:c(), name:'GxP / Calidad', color:'#ff4757' },
+      { id:c(), name:'Operaciones', color:'#00d2d3' },
+      { id:c(), name:'Proyectos', color:'#6c63ff' },
+      { id:c(), name:'Mantenimiento', color:'#ff9f43' },
+      { id:c(), name:'Proveedores', color:'#26de81' },
+      { id:c(), name:'Administración', color:'#a55eea' },
+      { id:c(), name:'EHS', color:'#fd9644' },
+      { id:c(), name:'Documentación', color:'#1e90ff' },
+    ],
+    persons: [],
+    apiKey: '',
+  };
+}
+function c() { return Math.random().toString(36).substr(2,9); }
+
+let db = load();
+let currentView = 'lista';
+let showCompleted = false;
+let editingId = null;
+let editingSubtasks = [];
+let selectedCatColor = COLORS[0];
+let selectedEquipoColor = COLORS[2];
+let iaOpen = false;
+let calState = {};
+
+// ======================= DATE PICKER =======================
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DAYS_ES = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
+
+function initCal(name) {
+  const today = new Date();
+  calState[name] = { year: today.getFullYear(), month: today.getMonth(), open: false, value: '' };
+}
+
+function toggleCal(name) {
+  // close all other cals
+  Object.keys(calState).forEach(k => { if(k !== name && calState[k]) calState[k].open = false; renderCal(k); });
+  if(!calState[name]) initCal(name);
+  calState[name].open = !calState[name].open;
+  document.getElementById('dpDisplayFecha').classList.toggle('open', calState[name].open);
+  renderCal(name);
+  if(calState[name].open) {
+    // close when clicking outside
+    setTimeout(() => document.addEventListener('click', outsideCalHandler, { once: true }), 10);
+  }
+}
+
+function outsideCalHandler(e) {
+  const wrapper = document.getElementById('dpWrapperFecha');
+  if(wrapper && !wrapper.contains(e.target)) {
+    if(calState['Fecha']) { calState['Fecha'].open = false; document.getElementById('dpDisplayFecha').classList.remove('open'); renderCal('Fecha'); }
+  }
+}
+
+function renderCal(name) {
+  const st = calState[name];
+  const calEl = document.getElementById('dpCal'+name);
+  if(!calEl) return;
+  if(!st || !st.open) { calEl.classList.remove('open'); return; }
+  calEl.classList.add('open');
+  const { year, month, value } = st;
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  // Adjust: week starts Monday. getDay() 0=Sun → 6, 1=Mon → 0, ...
+  const startOffset = (firstDay === 0) ? 6 : firstDay - 1;
+
+  let days = '';
+  for(let i=0; i<startOffset; i++) days += `<div class="cal-day empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++) {
+    const thisDate = new Date(year, month, d);
+    const iso = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isTod = thisDate.getTime() === today.getTime();
+    const isSel = iso === value;
+    days += `<div class="cal-day${isTod?' today-mark':''}${isSel?' selected':''}" onclick="selectCalDay('${name}','${iso}')">${d}</div>`;
+  }
+
+  calEl.innerHTML = `
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="event.stopPropagation();calMove('${name}',-1)">‹</button>
+      <div class="cal-month-label">${MONTHS_ES[month]} ${year}</div>
+      <button class="cal-nav-btn" onclick="event.stopPropagation();calMove('${name}',1)">›</button>
+    </div>
+    <div class="cal-days-header">${DAYS_ES.map(d=>`<div class="cal-day-name">${d}</div>`).join('')}</div>
+    <div class="cal-days-grid">${days}</div>`;
+}
+
+function calMove(name, dir) {
+  const st = calState[name];
+  st.month += dir;
+  if(st.month > 11) { st.month=0; st.year++; }
+  if(st.month < 0) { st.month=11; st.year--; }
+  renderCal(name);
+}
+
+function selectCalDay(name, iso) {
+  calState[name].value = iso;
+  calState[name].open = false;
+  document.getElementById('dpDisplayFecha').classList.remove('open');
+  // Update display
+  const parts = iso.split('-');
+  const label = document.getElementById('dpLabel'+name);
+  const clearBtn = document.getElementById('dpClear'+name);
+  const hiddenInput = document.getElementById('fDate');
+  label.textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
+  label.classList.remove('placeholder');
+  if(clearBtn) clearBtn.style.display='inline';
+  if(hiddenInput) hiddenInput.value = iso;
+  renderCal(name);
+}
+
+function clearDate(name) {
+  calState[name].value = '';
+  const label = document.getElementById('dpLabel'+name);
+  const clearBtn = document.getElementById('dpClear'+name);
+  const hiddenInput = document.getElementById('fDate');
+  label.textContent = 'Seleccioná una fecha';
+  label.classList.add('placeholder');
+  if(clearBtn) clearBtn.style.display='none';
+  if(hiddenInput) hiddenInput.value = '';
+}
+
+function setCalValue(name, iso) {
+  if(!calState[name]) initCal(name);
+  calState[name].value = iso;
+  const label = document.getElementById('dpLabel'+name);
+  const clearBtn = document.getElementById('dpClear'+name);
+  const hiddenInput = document.getElementById('fDate');
+  if(!iso) {
+    label.textContent = 'Seleccioná una fecha';
+    label.classList.add('placeholder');
+    if(clearBtn) clearBtn.style.display='none';
+    if(hiddenInput) hiddenInput.value='';
+  } else {
+    const parts = iso.split('-');
+    label.textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    label.classList.remove('placeholder');
+    if(clearBtn) clearBtn.style.display='inline';
+    if(hiddenInput) hiddenInput.value = iso;
+    // Set calendar to correct month/year
+    calState[name].year = parseInt(parts[0]);
+    calState[name].month = parseInt(parts[1])-1;
+  }
+}
+
+// ======================= URGENCY =======================
+function getUrgency(task) {
+  if(task.completed) return 'completed';
+  if(!task.dueDate) return 'none';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(task.dueDate+'T00:00:00');
+  const diff = Math.round((due-today)/86400000);
+  if(diff<0) return 'overdue';
+  if(diff===0) return 'today';
+  if(diff<=2) return 'urgent';
+  if(diff<=7) return 'week';
+  return 'none';
+}
+function getDaysLabel(task) {
+  if(!task.dueDate) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(task.dueDate+'T00:00:00');
+  const diff = Math.round((due-today)/86400000);
+  if(diff<0) return `Venció hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`;
+  if(diff===0) return 'Vence hoy';
+  if(diff===1) return 'Vence mañana';
+  return `Vence en ${diff} días`;
+}
+function urgencyOrder(task) {
+  const u = getUrgency(task);
+  const pMap = {'Crítico':0,'Alto':1,'Medio':2,'Bajo':3};
+  const base = {overdue:0,today:1,urgent:2,week:3,none:4,completed:5}[u]??4;
+  return base*10+(pMap[task.priority]??2);
+}
+
+// ======================= FILTERS =======================
+function getFiltered() {
+  const cat = document.getElementById('filterCat')?.value||'';
+  const prio = document.getElementById('filterPrio')?.value||'';
+  const person = document.getElementById('filterPerson')?.value||'';
+  return db.tasks.filter(t=>{
+    if(!showCompleted && t.completed) return false;
+    if(cat && t.category!==cat) return false;
+    if(prio && t.priority!==prio) return false;
+    if(person && t.personId!==person) return false;
+    return true;
+  }).sort((a,b)=>urgencyOrder(a)-urgencyOrder(b));
+}
+
+// ======================= RENDER =======================
+function renderAll() {
+  updateStats(); updateHeaderAlerts(); populateFilters(); updatePersonBtns();
+  if(currentView==='lista') renderLista();
+  if(currentView==='tablero') renderTablero();
+  if(currentView==='timeline') renderTimeline();
+}
+
+function updateStats() {
+  const all = db.tasks;
+  const active = all.filter(t=>!t.completed);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const overdue = active.filter(t=>t.dueDate&&new Date(t.dueDate+'T00:00:00')<today);
+  const blocked = active.filter(t=>t.status==='Bloqueado'||t.blockedReason);
+  document.getElementById('statActivos').textContent = active.length;
+  document.getElementById('statVencidos').textContent = overdue.length;
+  document.getElementById('statBloqueados').textContent = blocked.length;
+  document.getElementById('statCompletados').textContent = all.filter(t=>t.completed).length;
+}
+
+function updateHeaderAlerts() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const active = db.tasks.filter(t=>!t.completed);
+  const overdue = active.filter(t=>t.dueDate&&new Date(t.dueDate+'T00:00:00')<today).length;
+  const todayCount = active.filter(t=>t.dueDate&&new Date(t.dueDate+'T00:00:00').getTime()===today.getTime()).length;
+  let html='';
+  if(overdue>0) html+=`<div class="alert-pill">⚠ ${overdue} vencido${overdue!==1?'s':''}</div>`;
+  if(todayCount>0) html+=`<div class="alert-pill orange">🔔 ${todayCount} vence${todayCount===1?'':'n'} hoy</div>`;
+  document.getElementById('headerAlerts').innerHTML=html;
+}
+
+function populateFilters() {
+  const cats=['<option value="">Categoría</option>',...db.categories.map(c=>`<option value="${c.name}">${c.name}</option>`)].join('');
+  const persons=['<option value="">Persona</option>',...db.persons.map(p=>`<option value="${p.id}">${p.name}</option>`)].join('');
+  const fc=document.getElementById('filterCat'), fp=document.getElementById('filterPerson');
+  const prevCat=fc?.value, prevPerson=fp?.value;
+  if(fc){fc.innerHTML=cats; if(prevCat)fc.value=prevCat;}
+  if(fp){fp.innerHTML=persons; if(prevPerson)fp.value=prevPerson;}
+}
+
+// ======================= TASK CARD =======================
+function taskCardHTML(t) {
+  const urg=getUrgency(t), daysLabel=getDaysLabel(t);
+  const cat=db.categories.find(c=>c.name===t.category);
+  const person=db.persons.find(p=>p.id===t.personId);
+  const subDone=(t.subtasks||[]).filter(s=>s.done).length, subTotal=(t.subtasks||[]).length;
+  const prioClass={'Crítico':'prio-critico','Alto':'prio-alto','Medio':'prio-medio','Bajo':'prio-bajo'}[t.priority]||'';
+  const urgBadge={overdue:`<span class="badge urgency-overdue">VENCIDO</span>`,today:`<span class="badge urgency-today">HOY</span>`,urgent:`<span class="badge urgency-urgent">URGENTE</span>`}[urg]||'';
+  const urgClass=urg!=='none'&&urg!=='completed'?urg:'';
+  const hasPerson=!!person;
+
+  return `
+  <div class="task-card ${urgClass} ${t.status==='Bloqueado'||t.blockedReason?'blocked':''} ${t.completed?'completed':''}" onclick="openModal('${t.id}')">
+    <div class="task-actions">
+      <button class="btn-delete" onclick="event.stopPropagation();deleteTask('${t.id}')">×</button>
+    </div>
+    <div class="task-header">
+      <div class="task-check ${t.completed?'checked':''}" onclick="event.stopPropagation();toggleComplete('${t.id}')"></div>
+      <div class="task-body">
+        <div class="task-title">${escHtml(t.title)}</div>
+        <div class="task-meta">
+          ${urgBadge}
+          ${cat?`<span class="badge cat" style="border-color:${cat.color}40;color:${cat.color}">${escHtml(cat.name)}</span>`:''}
+          ${t.priority?`<span class="badge ${prioClass}">${t.priority}</span>`:''}
+          ${t.status==='Bloqueado'?`<span class="badge estado-bloqueado">🔒 Bloqueado</span>`:t.status==='En progreso'?`<span class="badge estado-progreso">▶ En progreso</span>`:''}
+          ${daysLabel?`<span class="task-date ${urgClass}">${daysLabel}</span>`:''}
+        </div>
+        ${person?`<div class="task-person"><div class="person-dot" style="background:${person.color}">${person.name[0].toUpperCase()}</div>${escHtml(person.name)}</div>`:''}
+        ${t.blockedReason?`<div class="task-blocked">🔒 ${escHtml(t.blockedReason)}</div>`:''}
+        ${subTotal>0?`<div class="progress-bar"><div class="progress-fill" style="width:${Math.round(subDone/subTotal*100)}%"></div></div><div class="progress-label">${subDone}/${subTotal} subtareas</div>`:''}
+        ${!t.completed?`<div class="task-bottom-actions">
+          <button class="btn-card-mail" onclick="event.stopPropagation();generateMailForTask('${t.id}')" ${!hasPerson?'title="Asigná una persona para generar email" style="opacity:0.4;cursor:not-allowed"':''}>
+            ✉️ Generar email${person?' para '+escHtml(person.name):''}
+          </button>
+        </div>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ======================= VIEWS =======================
+function renderLista() {
+  const tasks=getFiltered();
+  const groups=[
+    {key:'overdue',label:'Vencidos',tasks:[]},{key:'today',label:'Vencen hoy',tasks:[]},
+    {key:'urgent',label:'Urgentes (1-2 días)',tasks:[]},{key:'week',label:'Esta semana',tasks:[]},
+    {key:'none',label:'Con margen',tasks:[]},{key:'completed',label:'Completados',tasks:[]},
+  ];
+  for(const t of tasks){const u=getUrgency(t);(groups.find(g=>g.key===u)||groups[4]).tasks.push(t);}
+  let html='';
+  for(const g of groups){
+    if(!g.tasks.length) continue;
+    html+=`<div class="section-label">${g.label} <span style="color:var(--text2);font-family:'Space Mono',monospace;font-size:11px">${g.tasks.length}</span></div><div class="tasks-grid">${g.tasks.map(taskCardHTML).join('')}</div>`;
+  }
+  if(!html) html=`<div class="empty-state"><div class="icon">📋</div><p>No hay pendientes</p><small>Usá "+ Nuevo" para crear tu primer pendiente</small></div>`;
+  document.getElementById('viewLista').innerHTML=html;
+}
+
+function renderTablero() {
+  const tasks=getFiltered();
+  const cols=[{key:'Pendiente',label:'Pendiente',tasks:[]},{key:'En progreso',label:'En progreso',tasks:[]},{key:'Bloqueado',label:'Bloqueado',tasks:[]},{key:'Completado',label:'Completado',tasks:[]}];
+  for(const t of tasks){const status=t.completed?'Completado':(t.status||'Pendiente');(cols.find(c=>c.key===status)||cols[0]).tasks.push(t);}
+  document.getElementById('viewTablero').innerHTML=`<div class="board">${cols.map(col=>`
+    <div class="board-col">
+      <div class="board-col-header"><div class="board-col-title">${col.label}</div><div class="board-col-count">${col.tasks.length}</div></div>
+      <div class="board-cards">
+        ${col.tasks.length?col.tasks.map(t=>{
+          const cat=db.categories.find(c=>c.name===t.category);
+          return `<div class="board-card" onclick="openModal('${t.id}')">
+            <div class="board-card-title">${escHtml(t.title)}</div>
+            <div class="board-card-meta">
+              ${cat?`<span class="badge cat" style="border-color:${cat.color}40;color:${cat.color}">${escHtml(cat.name)}</span>`:''}
+              ${t.priority?`<span class="badge ${'Crítico,Alto,Medio,Bajo'.split(',').reduce((a,p)=>({...a,[p]:'prio-'+p.toLowerCase().replace('é','e').replace('í','i')+'o'.replace('prio-critico','prio-critico').replace('prio-alto','prio-alto').replace('prio-medioo','prio-medio').replace('prio-bajoo','prio-bajo')}),{})['Crítico']?'prio-critico':t.priority==='Alto'?'prio-alto':t.priority==='Medio'?'prio-medio':'prio-bajo'}">${t.priority}</span>`:''}
+              ${t.dueDate?`<span style="font-size:10px;color:var(--text3)">${getDaysLabel(t)}</span>`:''}
+            </div>
+          </div>`;
+        }).join(''):`<div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">Sin tareas</div>`}
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function renderTimeline() {
+  const tasks=getFiltered(), today=new Date(); today.setHours(0,0,0,0);
+  const groups=[{key:'overdue',label:'Vencidos',dot:'red',tasks:[]},{key:'today',label:'Hoy',dot:'orange',tasks:[]},{key:'week',label:'Esta semana',dot:'cyan',tasks:[]},{key:'month',label:'Este mes',dot:'accent',tasks:[]},{key:'later',label:'Más adelante',dot:'gray',tasks:[]},{key:'nodate',label:'Sin fecha',dot:'gray',tasks:[]}];
+  for(const t of tasks){
+    if(!t.dueDate){groups[5].tasks.push(t);continue;}
+    const diff=Math.round((new Date(t.dueDate+'T00:00:00')-today)/86400000);
+    if(diff<0)groups[0].tasks.push(t);else if(diff===0)groups[1].tasks.push(t);else if(diff<=7)groups[2].tasks.push(t);else if(diff<=31)groups[3].tasks.push(t);else groups[4].tasks.push(t);
+  }
+  let html='';
+  for(const g of groups){
+    if(!g.tasks.length) continue;
+    html+=`<div class="timeline-section"><div class="timeline-header"><div class="timeline-dot ${g.dot}"></div>${g.label} <span style="color:var(--text3);font-family:'Space Mono',monospace;font-size:11px">${g.tasks.length}</span></div><div class="tasks-grid">${g.tasks.map(taskCardHTML).join('')}</div></div>`;
+  }
+  if(!html) html=`<div class="empty-state"><div class="icon">📅</div><p>No hay pendientes</p></div>`;
+  document.getElementById('viewTimeline').innerHTML=html;
+}
+
+function setView(v) {
+  currentView=v;
+  document.getElementById('viewLista').classList.toggle('hidden',v!=='lista');
+  document.getElementById('viewTablero').classList.toggle('hidden',v!=='tablero');
+  document.getElementById('viewTimeline').classList.toggle('hidden',v!=='timeline');
+  ['lista','tablero','timeline'].forEach(id=>document.getElementById('tab-'+id)?.classList.toggle('active',id===v));
+  renderAll();
+}
+function toggleCompleted() { showCompleted=!showCompleted; document.getElementById('toggleCompleted').classList.toggle('active',showCompleted); renderAll(); }
+
+// ======================= MODAL =======================
+function openModal(id) {
+  editingId=id||null; editingSubtasks=[];
+  const t=id?db.tasks.find(t=>t.id===id):null;
+  document.getElementById('modalTitle').textContent=t?'Editar pendiente':'Nuevo pendiente';
+  const catSel=document.getElementById('fCat');
+  catSel.innerHTML=['<option value="">— sin categoría —</option>',...db.categories.map(c=>`<option value="${c.name}">${c.name}</option>`)].join('');
+  const personSel=document.getElementById('fPerson');
+  personSel.innerHTML=['<option value="">— ninguno —</option>',...db.persons.map(p=>`<option value="${p.id}">${p.name}</option>`)].join('');
+
+  // Init calendar
+  initCal('Fecha');
+  if(t) {
+    document.getElementById('fTitle').value=t.title||'';
+    catSel.value=t.category||'';
+    document.getElementById('fPrio').value=t.priority||'Medio';
+    document.getElementById('fEstado').value=t.status||'Pendiente';
+    personSel.value=t.personId||'';
+    setCalValue('Fecha', t.dueDate||'');
+    document.getElementById('fAviso').value=t.aviso||'';
+    document.getElementById('fBlocked').value=t.blockedReason||'';
+    document.getElementById('fNotes').value=t.notes||'';
+    editingSubtasks=JSON.parse(JSON.stringify(t.subtasks||[]));
+  } else {
+    document.getElementById('fTitle').value='';
+    catSel.value=''; document.getElementById('fPrio').value='Medio';
+    document.getElementById('fEstado').value='Pendiente'; personSel.value='';
+    setCalValue('Fecha','');
+    document.getElementById('fAviso').value=''; document.getElementById('fBlocked').value=''; document.getElementById('fNotes').value='';
+  }
+  renderSubtasks();
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('fTitle').focus();
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); if(calState['Fecha']) calState['Fecha'].open=false; renderCal('Fecha'); }
+
+function renderSubtasks() {
+  document.getElementById('subtaskList').innerHTML=editingSubtasks.map((s,i)=>`
+    <div class="subtask-item">
+      <div class="subtask-check ${s.done?'done':''}" onclick="toggleSubEdit(${i})"></div>
+      <div class="subtask-text ${s.done?'done':''}">${escHtml(s.text)}</div>
+      <button class="btn-del-sub" onclick="removeSubEdit(${i})">×</button>
+    </div>`).join('');
+}
+function addSubtask() { const inp=document.getElementById('subtaskInput'),val=inp.value.trim(); if(!val)return; editingSubtasks.push({id:c(),text:val,done:false}); inp.value=''; renderSubtasks(); }
+function toggleSubEdit(i) { editingSubtasks[i].done=!editingSubtasks[i].done; renderSubtasks(); }
+function removeSubEdit(i) { editingSubtasks.splice(i,1); renderSubtasks(); }
+
+function saveTask() {
+  const title=document.getElementById('fTitle').value.trim();
+  if(!title){document.getElementById('fTitle').style.borderColor='var(--red)';return;}
+  document.getElementById('fTitle').style.borderColor='';
+  const data={title,category:document.getElementById('fCat').value,priority:document.getElementById('fPrio').value,status:document.getElementById('fEstado').value,personId:document.getElementById('fPerson').value,dueDate:document.getElementById('fDate').value,aviso:document.getElementById('fAviso').value,blockedReason:document.getElementById('fBlocked').value.trim(),notes:document.getElementById('fNotes').value.trim(),subtasks:editingSubtasks,completed:document.getElementById('fEstado').value==='Completado'};
+  if(editingId){const idx=db.tasks.findIndex(t=>t.id===editingId);if(idx>=0)db.tasks[idx]={...db.tasks[idx],...data};}
+  else db.tasks.unshift({id:c(),createdAt:new Date().toISOString(),...data});
+  save(db); closeModal(); renderAll();
+}
+function deleteTask(id) { if(!confirm('¿Eliminar este pendiente?'))return; db.tasks=db.tasks.filter(t=>t.id!==id); save(db); renderAll(); }
+function toggleComplete(id) { const t=db.tasks.find(t=>t.id===id); if(!t)return; t.completed=!t.completed; if(t.completed)t.status='Completado'; else if(t.status==='Completado')t.status='Pendiente'; save(db); renderAll(); }
+
+// ======================= EQUIPO =======================
+function openEquipo() {
+  selectedEquipoColor=COLORS[2];
+  renderEquipoPersons();
+  document.getElementById('equipoOverlay').classList.add('open');
+}
+function closeEquipo() { document.getElementById('equipoOverlay').classList.remove('open'); }
+
+function renderEquipoPersons() {
+  const list=document.getElementById('equipoPersonList');
+  const empty=document.getElementById('equipoEmpty');
+  if(!db.persons.length){list.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  const active=db.tasks.filter(t=>!t.completed);
+  list.innerHTML=db.persons.map(p=>{
+    const count=active.filter(t=>t.personId===p.id).length;
+    return `<div class="settings-item">
+      <div class="person-avatar" style="background:${p.color};width:32px;height:32px;font-size:13px">${p.name[0]?.toUpperCase()||'?'}</div>
+      <div style="flex:1">
+        <div class="settings-item-name">${escHtml(p.name)}</div>
+        <div style="font-size:11px;color:var(--text3)">${count} pendiente${count!==1?'s':''} activo${count!==1?'s':''}</div>
+      </div>
+      <button class="btn-del-setting" onclick="equipoDeletePerson('${p.id}')" title="Eliminar">×</button>
+    </div>`;
+  }).join('');
+  document.getElementById('equipoColorOptions').innerHTML=COLORS.map(clr=>`<div class="color-option ${clr===selectedEquipoColor?'selected':''}" style="background:${clr}" onclick="selectEquipoColor('${clr}')"></div>`).join('');
+}
+
+function selectEquipoColor(clr) { selectedEquipoColor=clr; renderEquipoPersons(); }
+
+function equipoAddPerson() {
+  const name=document.getElementById('equipoNewName').value.trim();
+  if(!name)return;
+  db.persons.push({id:c(),name,color:selectedEquipoColor});
+  document.getElementById('equipoNewName').value='';
+  save(db); renderEquipoPersons(); populateFilters(); updatePersonBtns(); renderAll();
+}
+
+function equipoDeletePerson(id) {
+  if(!confirm('¿Eliminar esta persona? Los pendientes asociados quedarán sin asignar.'))return;
+  db.persons=db.persons.filter(p=>p.id!==id);
+  save(db); renderEquipoPersons(); populateFilters(); updatePersonBtns(); renderAll();
+}
+
+// ======================= SETTINGS =======================
+function openSettings() {
+  renderSettingsCats();
+  document.getElementById('settingsApiKey').value=db.apiKey||'';
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+function closeSettings() { document.getElementById('settingsOverlay').classList.remove('open'); }
+
+function renderSettingsCats() {
+  document.getElementById('catList').innerHTML=db.categories.map(cat=>`
+    <div class="settings-item">
+      <div class="color-dot" style="background:${cat.color}"></div>
+      <div class="settings-item-name">${escHtml(cat.name)}</div>
+      <button class="btn-del-setting" onclick="deleteCat('${cat.id}')">×</button>
+    </div>`).join('');
+  document.getElementById('catColorOptions').innerHTML=COLORS.map(clr=>`<div class="color-option ${clr===selectedCatColor?'selected':''}" style="background:${clr}" onclick="selectCatColor('${clr}')"></div>`).join('');
+}
+function selectCatColor(clr){selectedCatColor=clr;renderSettingsCats();}
+function addCategory(){const name=document.getElementById('newCatName').value.trim();if(!name)return;db.categories.push({id:c(),name,color:selectedCatColor});document.getElementById('newCatName').value='';save(db);renderSettingsCats();populateFilters();}
+function deleteCat(id){db.categories=db.categories.filter(c=>c.id!==id);save(db);renderSettingsCats();populateFilters();renderAll();}
+function saveApiKey(){db.apiKey=document.getElementById('settingsApiKey').value.trim();save(db);alert('API Key guardada correctamente.');}
+function changeApiKey(){openSettings();}
+
+// ======================= IA =======================
+function toggleIA(){iaOpen=!iaOpen;document.getElementById('iaPanel').classList.toggle('open',iaOpen);document.getElementById('mainContent').classList.toggle('ia-open',iaOpen);if(iaOpen)updatePersonBtns();}
+
+function updatePersonBtns(){
+  const active=db.tasks.filter(t=>!t.completed);
+  const btns=db.persons.map(p=>{const count=active.filter(t=>t.personId===p.id).length;if(!count)return'';return`<button class="ia-person-btn" onclick="iaFollowup('${p.id}')"><div class="person-avatar" style="background:${p.color};width:28px;height:28px">${p.name[0].toUpperCase()}</div><span class="ia-person-name">${escHtml(p.name)}</span><span class="ia-person-count">${count} pendiente${count!==1?'s':''}</span></button>`;}).join('');
+  document.getElementById('iaPersonBtns').innerHTML=btns||`<div style="color:var(--text3);font-size:12px;padding:8px">No hay personas con pendientes activos</div>`;
+}
+
+function buildContext(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  return db.tasks.filter(t=>!t.completed).map(t=>{
+    const person=db.persons.find(p=>p.id===t.personId);
+    const due=t.dueDate?new Date(t.dueDate+'T00:00:00'):null;
+    const diff=due?Math.round((due-today)/86400000):null;
+    const dateStr=diff!==null?(diff<0?`vencida hace ${Math.abs(diff)} día(s)`:diff===0?'vence HOY':`vence en ${diff} día(s)`):'';
+    return `- "${t.title}" | Cat: ${t.category||'sin cat'} | Prio: ${t.priority||'-'} | Estado: ${t.status||'-'} | ${person?'Resp: '+person.name:''} | ${dateStr||'sin fecha'} | ${t.blockedReason?'BLOQUEADO: '+t.blockedReason:''}`;
+  }).join('\n');
+}
+
+async function callIA(prompt,extraSystem=''){
+  const key=db.apiKey;
+  if(!key)return'Para usar la IA, configurá tu API Key de Anthropic en ⚙ Ajustes.';
+  const context=buildContext();
+  const sys=`Sos un asistente ejecutivo personal que ayuda a gestionar pendientes de trabajo.
+FECHA DE HOY: ${new Date().toLocaleDateString('es-AR',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+PENDIENTES ACTIVOS:
+${context||'(sin pendientes activos)'}
+${extraSystem}
+Respondé siempre en español, de manera clara y concisa. Sé directo y práctico.`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,system:sys,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    if(data.error)return`Error: ${data.error.message}`;
+    return data.content?.[0]?.text||'Sin respuesta.';
+  }catch(e){return'Error de conexión. Verificá tu API Key y conexión a internet.';}
+}
+
+function showIAChat(){document.getElementById('iaHome').classList.add('hidden');document.getElementById('iaChat').classList.remove('hidden');}
+function showIAHome(){document.getElementById('iaHome').classList.remove('hidden');document.getElementById('iaChat').classList.add('hidden');document.getElementById('iaMessages').innerHTML='';}
+
+async function iaAction(type){
+  const prompts={priorizar:'¿Cuáles son los 3 pendientes más importantes en los que debería enfocarme hoy? Dame una justificación breve para cada uno.',riesgos:'¿Cuáles son los pendientes que representan mayor riesgo si no los atiendo esta semana? Incluí el motivo del riesgo.',resumen:'Dame un resumen ejecutivo de mi carga de trabajo actual. Incluí estadísticas, alertas principales y foco sugerido.',cuellos:'¿Hay cuellos de botella o acumulación de pendientes en alguna persona, categoría o causa de bloqueo? Identificá dónde se concentra la carga.'};
+  showIAChat();
+  addIAMessage('user',{priorizar:'Priorizar mi día',riesgos:'Riesgos críticos',resumen:'Resumen ejecutivo',cuellos:'Cuellos de botella'}[type]);
+  addIAMessage('assistant','Analizando pendientes...',true);
+  const resp=await callIA(prompts[type]);
+  updateLastIA(resp);
+}
+
+async function iaFollowup(personId){
+  const person=db.persons.find(p=>p.id===personId); if(!person)return;
+  const tasks=db.tasks.filter(t=>!t.completed&&t.personId===personId);
+  const list=tasks.map(t=>`- ${t.title}${t.dueDate?' (vence '+t.dueDate+')':''}${t.priority?' ['+t.priority+']':''}`).join('\n');
+  showIAChat();
+  addIAMessage('user',`Email de follow-up para ${person.name}`);
+  addIAMessage('assistant','Redactando email...',true);
+  const resp=await callIA(`Redactá un email de seguimiento para ${person.name} sobre los siguientes pendientes:\n${list}\n\nEl email debe tener: asunto sugerido, saludo profesional, contexto breve, lista de pendientes con fechas si corresponde, y cierre. Tono corporativo pero directo.`);
+  updateLastIA(resp);
+}
+
+async function sendIAMessage(){
+  const inp=document.getElementById('iaInput'), text=inp.value.trim(); if(!text)return;
+  inp.value=''; inp.style.height='40px';
+  showIAChat();
+  addIAMessage('user',text);
+  addIAMessage('assistant','Analizando...',true);
+  const resp=await callIA(text);
+  updateLastIA(resp);
+}
+
+function addIAMessage(role,text,loading=false){
+  const div=document.createElement('div');
+  div.className=`ia-msg ${role} ${loading?'loading':''}`;
+  div.style.whiteSpace='pre-wrap';
+  div.textContent=text;
+  document.getElementById('iaMessages').appendChild(div);
+  div.scrollIntoView({behavior:'smooth'});
+}
+function updateLastIA(text){
+  const msgs=document.getElementById('iaMessages').querySelectorAll('.ia-msg.loading');
+  if(msgs.length){const last=msgs[msgs.length-1];last.classList.remove('loading');last.textContent=text;last.scrollIntoView({behavior:'smooth'});}
+}
+
+// ======================= MAIL POR TAREA =======================
+let currentMailText = '';
+
+async function generateMailForTask(taskId) {
+  const t = db.tasks.find(t=>t.id===taskId);
+  if(!t) return;
+  const person = db.persons.find(p=>p.id===t.personId);
+  if(!person) { alert('Este pendiente no tiene una persona asignada. Editalo y asigná una persona primero.'); return; }
+
+  // Show mail modal loading
+  document.getElementById('mailModalTitle').textContent = `Email para ${person.name}`;
+  const contentEl = document.getElementById('mailContent');
+  contentEl.textContent = 'Generando email con IA...';
+  contentEl.classList.add('loading');
+  document.getElementById('btnCopyMail').textContent = '📋 Copiar email';
+  document.getElementById('btnCopyMail').classList.remove('copied');
+  currentMailText = '';
+  document.getElementById('mailOverlay').classList.add('open');
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = t.dueDate ? new Date(t.dueDate+'T00:00:00') : null;
+  const diff = due ? Math.round((due-today)/86400000) : null;
+  const dateInfo = diff!==null ? (diff<0?`vencía hace ${Math.abs(diff)} día(s)`:diff===0?'vence HOY':`vence en ${diff} día(s)`) : 'sin fecha definida';
+  const subsDone = (t.subtasks||[]).filter(s=>s.done).length;
+  const subsTotal = (t.subtasks||[]).length;
+
+  const prompt = `Redactá un email profesional de seguimiento dirigido a "${person.name}" sobre el siguiente pendiente específico:
+
+TÍTULO: ${t.title}
+CATEGORÍA: ${t.category||'sin categoría'}
+PRIORIDAD: ${t.priority||'sin definir'}
+ESTADO: ${t.status||'Pendiente'}
+FECHA: ${dateInfo}
+${t.blockedReason?'BLOQUEADO POR: '+t.blockedReason:''}
+${t.notes?'NOTAS: '+t.notes:''}
+${subsTotal>0?`SUBTAREAS: ${subsDone}/${subsTotal} completadas`:''}
+
+El email debe incluir:
+- Asunto sugerido (en la primera línea, formato: "Asunto: ...")
+- Saludo profesional dirigido a ${person.name}
+- Referencia clara al tema pendiente
+- Estado actual y próximos pasos esperados
+- Fecha de vencimiento si aplica
+- Cierre profesional
+Tono: corporativo, directo y claro. No demasiado largo.`;
+
+  const resp = await callIA(prompt, 'Si se pide redactar un email, incluí siempre el asunto en la primera línea con formato "Asunto: ..."');
+  contentEl.textContent = resp;
+  contentEl.classList.remove('loading');
+  currentMailText = resp;
+}
+
+function closeMailModal() { document.getElementById('mailOverlay').classList.remove('open'); }
+
+function copyMail() {
+  if(!currentMailText) return;
+  navigator.clipboard.writeText(currentMailText).then(()=>{
+    const btn=document.getElementById('btnCopyMail');
+    btn.textContent='✓ Copiado!';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='📋 Copiar email';btn.classList.remove('copied');},2500);
+  }).catch(()=>{ alert('No se pudo copiar automáticamente. Seleccioná el texto y copialo manualmente.'); });
+}
+
+// ======================= INIT =======================
+document.addEventListener('DOMContentLoaded',()=>{
+  initCal('Fecha');
+  renderAll();
+  // Render equipo color options on first open
+  document.getElementById('equipoColorOptions').innerHTML=COLORS.map(clr=>`<div class="color-option ${clr===selectedEquipoColor?'selected':''}" style="background:${clr}" onclick="selectEquipoColor('${clr}')"></div>`).join('');
+});
+</script>
+</body>
+</html>
