@@ -785,7 +785,25 @@ function clearDate(name) {
   if(hiddenInput) hiddenInput.value = '';
 }
 
-function setCalValue(name, iso) {
+function sanitizeIso(val) {
+  // If empty or invalid, return ''
+  if(!val || val === 'undefined' || val === 'null') return '';
+  const s = String(val).trim();
+  // Already in YYYY-MM-DD format
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Try to parse as date and extract YYYY-MM-DD
+  try {
+    const d = new Date(s);
+    if(isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  } catch(e) { return ''; }
+}
+
+function setCalValue(name, rawVal) {
+  const iso = sanitizeIso(rawVal);
   if(!calState[name]) initCal(name);
   calState[name].value = iso;
   const label = document.getElementById('dpLabel'+name);
@@ -802,7 +820,6 @@ function setCalValue(name, iso) {
     label.classList.remove('placeholder');
     if(clearBtn) clearBtn.style.display='inline';
     if(hiddenInput) hiddenInput.value = iso;
-    // Set calendar to correct month/year
     calState[name].year = parseInt(parts[0]);
     calState[name].month = parseInt(parts[1])-1;
   }
@@ -1055,7 +1072,7 @@ function saveTask() {
   const title=document.getElementById('fTitle').value.trim();
   if(!title){document.getElementById('fTitle').style.borderColor='var(--red)';return;}
   document.getElementById('fTitle').style.borderColor='';
-  const data={title,category:document.getElementById('fCat').value,priority:document.getElementById('fPrio').value,status:document.getElementById('fEstado').value,personId:document.getElementById('fPerson').value,dueDate:document.getElementById('fDate').value,aviso:document.getElementById('fAviso').value,blockedReason:document.getElementById('fBlocked').value.trim(),notes:document.getElementById('fNotes').value.trim(),subtasks:editingSubtasks,completed:document.getElementById('fEstado').value==='Completado'};
+  const data={title,category:document.getElementById('fCat').value,priority:document.getElementById('fPrio').value,status:document.getElementById('fEstado').value,personId:document.getElementById('fPerson').value,dueDate:sanitizeIso(document.getElementById('fDate').value),aviso:document.getElementById('fAviso').value,blockedReason:document.getElementById('fBlocked').value.trim(),notes:document.getElementById('fNotes').value.trim(),subtasks:editingSubtasks,completed:document.getElementById('fEstado').value==='Completado'};
   if(editingId){const idx=db.tasks.findIndex(t=>t.id===editingId);if(idx>=0)db.tasks[idx]={...db.tasks[idx],...data};}
   else db.tasks.unshift({id:c(),createdAt:new Date().toISOString(),...data});
   save(db); closeModal(); renderAll();
@@ -1187,7 +1204,15 @@ async function iaFollowup(personId){
   showIAChat();
   addIAMessage('user',`Email de follow-up para ${person.name}`);
   addIAMessage('assistant','Redactando email...',true);
-  const resp=await callIA(`Redactá un email de seguimiento para ${person.name} sobre los siguientes pendientes:\n${list}\n\nEl email debe tener: asunto sugerido, saludo profesional, contexto breve, lista de pendientes con fechas si corresponde, y cierre. Tono corporativo pero directo.`);
+  const resp=await callIA(`Redactá un email de seguimiento para ${person.name} sobre estos pendientes:\n${list}\n\nIMPORTANTE - Usá exactamente este estilo de escritura:
+- Empezá con "Hola ${person.name.split(' ')[0]}, cómo estás?" (solo el primer nombre)
+- Cuerpo en texto corrido, natural, sin negritas, sin campos estructurados, sin listas con guiones
+- Mencioná los temas de forma conversacional, como si lo estuvieras explicando en persona
+- Si hay fecha, mencionala de forma natural dentro del texto
+- Cerrá siempre con "Muchas gracias" y nada más
+- Incluí un asunto breve y directo en la primera línea con formato: "Asunto: ..."
+- No uses palabras como "Estado actual:", "Acción requerida:", "Prioridad crítica" ni ningún campo estructurado
+- El tono es profesional pero cercano, directo y conciso`);
   updateLastIA(resp);
 }
 
@@ -1240,27 +1265,26 @@ async function generateMailForTask(taskId) {
   const subsDone = (t.subtasks||[]).filter(s=>s.done).length;
   const subsTotal = (t.subtasks||[]).length;
 
-  const prompt = `Redactá un email profesional de seguimiento dirigido a "${person.name}" sobre el siguiente pendiente específico:
+  const firstName = person.name.split(' ')[0];
+  const prompt = `Redactá un email de seguimiento dirigido a ${person.name} sobre este pendiente:
 
-TÍTULO: ${t.title}
-CATEGORÍA: ${t.category||'sin categoría'}
-PRIORIDAD: ${t.priority||'sin definir'}
-ESTADO: ${t.status||'Pendiente'}
-FECHA: ${dateInfo}
-${t.blockedReason?'BLOQUEADO POR: '+t.blockedReason:''}
-${t.notes?'NOTAS: '+t.notes:''}
-${subsTotal>0?`SUBTAREAS: ${subsDone}/${subsTotal} completadas`:''}
+TEMA: ${t.title}
+${t.dueDate ? 'FECHA: ' + dateInfo : ''}
+${t.blockedReason ? 'CONTEXTO: ' + t.blockedReason : ''}
+${t.notes ? 'NOTAS: ' + t.notes : ''}
 
-El email debe incluir:
-- Asunto sugerido (en la primera línea, formato: "Asunto: ...")
-- Saludo profesional dirigido a ${person.name}
-- Referencia clara al tema pendiente
-- Estado actual y próximos pasos esperados
-- Fecha de vencimiento si aplica
-- Cierre profesional
-Tono: corporativo, directo y claro. No demasiado largo.`;
+INSTRUCCIONES DE ESTILO - Es MUY importante que respetes esto:
+- Primera línea: "Asunto: ..." (breve y directo, sin mencionar prioridad ni urgencia)
+- Empezá el cuerpo con "Hola ${firstName}, cómo estás?" (solo el primer nombre)
+- Escribí en texto corrido, natural, como si hablaras con la persona
+- NUNCA uses negritas, campos estructurados, ni etiquetas como "Estado actual:", "Acción requerida:", "Nota importante:", "Prioridad crítica" o similares
+- Mencioná el tema de forma conversacional e integrada en el texto
+- Si hay fecha límite, mencionala naturalmente dentro del texto
+- Sé conciso: no más de 3-4 oraciones en el cuerpo
+- Cerrá únicamente con "Muchas gracias" — sin firma, sin nombre, sin cargo
+- Tono: profesional pero cercano y directo, nunca rígido ni corporativo`;
 
-  const resp = await callIA(prompt, 'Si se pide redactar un email, incluí siempre el asunto en la primera línea con formato "Asunto: ..."');
+  const resp = await callIA(prompt, 'Cuando redactes emails, imitá exactamente el estilo indicado. Nunca uses campos estructurados con negritas.');
   contentEl.textContent = resp;
   contentEl.classList.remove('loading');
   currentMailText = resp;
