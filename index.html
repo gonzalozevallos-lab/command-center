@@ -309,7 +309,75 @@ textarea.form-input{resize:vertical;min-height:80px;}
 .empty-state p{font-size:14px;margin-bottom:4px;}
 .empty-state small{font-size:12px;}
 .hidden{display:none!important;}
-@media(max-width:600px){.main{padding:10px;}.controls{padding:8px 10px;gap:6px;}.header{padding:0 10px;gap:8px;}.header-logo{font-size:11px;}}
+
+/* ===== RESPONSIVE MOBILE ===== */
+@media(max-width:768px){
+  /* Header: ocultar textos, mostrar solo íconos */
+  .header{padding:0 10px;gap:8px;height:52px;}
+  .header-logo{font-size:11px;}
+  #syncStatus{display:none;}
+  .header-alerts{display:none;}
+  .btn-equipo{padding:7px 10px;font-size:0;}/* solo emoji */
+  .btn-equipo::before{content:'👥';font-size:18px;}
+  .btn-ia{padding:7px 10px;font-size:0;}
+  .btn-ia::before{content:'✦';font-size:16px;}
+  .btn-new{padding:7px 12px;font-size:13px;}
+  .btn-settings{width:34px;height:34px;}
+
+  /* Stats: más compactas */
+  .stat-item{padding:10px 8px;}
+  .stat-value{font-size:20px;}
+  .stat-label{font-size:9px;letter-spacing:0.04em;}
+
+  /* Controls: reorganizar en 2 filas */
+  .controls{padding:8px 10px;gap:6px;}
+  .view-tabs{width:100%;}
+  .view-tab{flex:1;text-align:center;padding:5px 6px;font-size:11px;}
+  .search-input{width:100%;flex:1 1 100%;}
+  .filter-select{flex:1;font-size:12px;padding:6px 8px;}
+  .filter-toggle{font-size:11px;padding:5px 10px;}
+
+  /* Main */
+  .main{padding:10px;}
+
+  /* Task cards */
+  .task-card{padding:12px 10px;}
+  .task-title{font-size:13px;}
+  .task-meta{gap:4px;}
+  .badge{font-size:9px;padding:2px 6px;}
+  .task-bottom-actions{opacity:1;gap:5px;}
+  .btn-card-mail{font-size:10px;padding:4px 8px;}
+  .btn-card-snooze{font-size:10px;padding:4px 8px;}
+
+  /* Modal: full screen en celular */
+  .modal-overlay{padding:0;align-items:flex-end;}
+  .modal{max-width:100%;border-radius:16px 16px 0 0;max-height:92vh;}
+  .modal-header{border-radius:16px 16px 0 0;padding:16px;}
+  .modal-body{padding:14px;gap:12px;}
+  .modal-footer{padding:12px 14px;}
+  .form-row{grid-template-columns:1fr;}
+  .form-input,.form-select{font-size:16px;}/* evita zoom en iOS */
+  .add-subtask-input,.add-comment-input,.add-setting-input{font-size:16px;}
+
+  /* Equipo/Settings: full screen */
+  .equipo-overlay,.settings-overlay,.mail-overlay{padding:0;align-items:flex-end;}
+  .equipo-modal,.settings-modal,.mail-modal{max-width:100%;border-radius:16px 16px 0 0;max-height:90vh;}
+  .equipo-header,.settings-header,.mail-header{border-radius:16px 16px 0 0;}
+
+  /* Board: 1 columna */
+  .board{grid-template-columns:1fr;}
+
+  /* Carga: 1 columna */
+  .carga-grid{grid-template-columns:1fr;}
+
+  /* IA panel: full screen */
+  .ia-panel{width:100%;right:-100%;}
+  .main.ia-open{margin-right:0;}
+
+  /* Calendar: asegurar que no se corte */
+  .date-calendar{min-width:240px;left:0;right:auto;}
+  .cal-day{padding:5px 1px;font-size:11px;}
+}
 </style>
 </head>
 <body>
