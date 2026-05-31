@@ -378,6 +378,37 @@ textarea.form-input{resize:vertical;min-height:80px;}
   .date-calendar{min-width:240px;left:0;right:auto;}
   .cal-day{padding:5px 1px;font-size:11px;}
 }
+
+/* ===== BRIEFING DIARIO ===== */
+.briefing-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.briefing-overlay.open{opacity:1;pointer-events:all;}
+.briefing-modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:500px;box-shadow:0 8px 40px rgba(0,0,0,0.6);overflow:hidden;transform:translateY(16px);transition:transform 0.3s;}
+.briefing-overlay.open .briefing-modal{transform:translateY(0);}
+.briefing-top{background:linear-gradient(135deg,rgba(108,99,255,0.2),rgba(0,210,211,0.1));padding:20px 20px 16px;border-bottom:1px solid var(--border);}
+.briefing-day{font-size:11px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px;}
+.briefing-title{font-size:18px;font-weight:700;color:var(--text);}
+.briefing-body{padding:20px;}
+.briefing-text{font-size:14px;line-height:1.8;color:var(--text2);white-space:pre-wrap;min-height:60px;}
+.briefing-loader{display:inline-flex;gap:5px;margin-left:4px;vertical-align:middle;}
+.briefing-loader span{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:bdot 1.2s infinite;}
+.briefing-loader span:nth-child(2){animation-delay:0.2s;}
+.briefing-loader span:nth-child(3){animation-delay:0.4s;}
+@keyframes bdot{0%,80%,100%{opacity:0.2;transform:scale(0.8);}40%{opacity:1;transform:scale(1);}}
+.briefing-stats{display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);}
+.briefing-stat{flex:1;text-align:center;padding:10px 6px;background:var(--surface2);border-radius:var(--radius-sm);}
+.briefing-stat-val{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;line-height:1;}
+.briefing-stat-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-top:3px;}
+.briefing-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.briefing-skip{font-size:12px;color:var(--text3);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;transition:var(--transition);}
+.briefing-skip:hover{color:var(--text2);}
+.briefing-close{padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;transition:var(--transition);}
+.briefing-close:hover{background:var(--accent2);}
+@media(max-width:768px){
+  .briefing-overlay{padding:0;align-items:flex-end;}
+  .briefing-modal{border-radius:16px 16px 0 0;max-height:88vh;overflow-y:auto;}
+  .briefing-stats{flex-wrap:wrap;}
+  .briefing-stat{min-width:calc(50% - 5px);}
+}
 </style>
 </head>
 <body>
@@ -425,6 +456,27 @@ textarea.form-input{resize:vertical;min-height:80px;}
   <div id="viewTimeline" class="hidden"></div>
   <div id="viewCarga" class="hidden"></div>
 </main>
+
+
+<!-- BRIEFING DIARIO -->
+<div class="briefing-overlay" id="briefingOverlay">
+  <div class="briefing-modal">
+    <div class="briefing-top">
+      <div class="briefing-day" id="briefingDay"></div>
+      <div class="briefing-title">✦ Briefing del día</div>
+    </div>
+    <div class="briefing-body">
+      <div class="briefing-text" id="briefingText">
+        Preparando tu resumen<div class="briefing-loader"><span></span><span></span><span></span></div>
+      </div>
+      <div class="briefing-stats" id="briefingStats"></div>
+    </div>
+    <div class="briefing-footer">
+      <button class="briefing-skip" onclick="skipBriefingToday()">No mostrar hoy de nuevo</button>
+      <button class="briefing-close" onclick="closeBriefing()">Empezar el día →</button>
+    </div>
+  </div>
+</div>
 
 <!-- IA PANEL -->
 <div class="ia-panel" id="iaPanel">
@@ -1337,6 +1389,68 @@ function copyMail(){
   }).catch(()=>alert('No se pudo copiar automáticamente. Seleccioná el texto manualmente.'));
 }
 
+
+// ======================= BRIEFING DIARIO =======================
+function shouldShowBriefing() {
+  const today = todayIso();
+  const last = localStorage.getItem('briefing_last_shown');
+  return last !== today;
+}
+
+function skipBriefingToday() {
+  localStorage.setItem('briefing_last_shown', todayIso());
+  closeBriefing();
+}
+
+function closeBriefing() {
+  document.getElementById('briefingOverlay').classList.remove('open');
+}
+
+async function showDailyBriefing() {
+  if(!db.apiKey) return; // sin API key no hay briefing
+  if(!shouldShowBriefing()) return;
+  if(!(db.tasks && db.tasks.length)) return; // sin tareas no hay nada que resumir
+
+  // Mostrar el panel
+  const overlay = document.getElementById('briefingOverlay');
+  const textEl = document.getElementById('briefingText');
+  const statsEl = document.getElementById('briefingStats');
+  const dayEl = document.getElementById('briefingDay');
+
+  // Fecha del día en español
+  const now = new Date();
+  dayEl.textContent = now.toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  // Stats rápidas
+  const active = (db.tasks||[]).filter(t=>!t.completed);
+  const overdue = active.filter(t=>t.dueDate&&daysDiff(t.dueDate)<0).length;
+  const todayTasks = active.filter(t=>t.dueDate&&daysDiff(t.dueDate)===0).length;
+  const blocked = active.filter(t=>t.status==='Bloqueado'||t.blockedReason).length;
+  const criticos = active.filter(t=>t.priority==='Crítico').length;
+
+  statsEl.innerHTML = `
+    <div class="briefing-stat"><div class="briefing-stat-val" style="color:var(--cyan)">${active.length}</div><div class="briefing-stat-lbl">Activos</div></div>
+    <div class="briefing-stat"><div class="briefing-stat-val" style="color:var(--red)">${overdue}</div><div class="briefing-stat-lbl">Vencidos</div></div>
+    <div class="briefing-stat"><div class="briefing-stat-val" style="color:var(--orange)">${todayTasks}</div><div class="briefing-stat-lbl">Vencen hoy</div></div>
+    <div class="briefing-stat"><div class="briefing-stat-val" style="color:var(--yellow)">${criticos}</div><div class="briefing-stat-lbl">Críticos</div></div>`;
+
+  overlay.classList.add('open');
+
+  // Generar resumen con IA
+  const prompt = `Generá un briefing ejecutivo breve para empezar el día. Debe ser directo, útil y en no más de 4-5 líneas.
+
+Incluí:
+1. Una frase de contexto general sobre la carga del día
+2. El pendiente MÁS urgente o crítico que debe atenderse primero y por qué
+3. Si hay algo bloqueado o vencido que requiere acción inmediata, mencionarlo
+4. Una frase de cierre motivadora y concisa
+
+NO uses listas con guiones ni campos estructurados. Texto corrido, tono directo y profesional. No uses negritas.`;
+
+  const resp = await callIA(prompt, 'Este es un briefing de inicio de día. Sé muy conciso, máximo 5 líneas en total. Sin formato especial.');
+  textEl.textContent = resp;
+}
+
 // ======================= INIT =======================
 document.addEventListener('DOMContentLoaded',async()=>{
   db=loadLocal();
@@ -1345,6 +1459,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
   document.getElementById('equipoColorOptions').innerHTML=COLORS.map(clr=>`<div class="color-option ${clr===selectedEquipoColor?'selected':''}" style="background:${clr}" onclick="selectEquipoColor('${clr}')"></div>`).join('');
   db=await loadFromSheets();
   renderAll();
+  // Briefing diario: esperar un segundo para que la app esté lista
+  setTimeout(()=>showDailyBriefing(), 1000);
 });
 </script>
 </body>
