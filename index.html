@@ -331,6 +331,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <!-- HEADER -->
 <header class="header">
   <div class="header-logo">CMD<span>CENTER</span></div>
+  <div id="syncStatus" style="font-size:11px;color:var(--text3);white-space:nowrap">☁ Conectando...</div>
   <div class="header-alerts" id="headerAlerts"></div>
   <div class="header-actions">
     <button class="btn-equipo" onclick="openEquipo()">👥 Equipo</button>
@@ -570,9 +571,10 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 // ======================= DATA =======================
 const STORAGE_KEY = 'cmdcenter_v3';
 const COLORS = ['#6c63ff','#ff4757','#ff9f43','#26de81','#00d2d3','#ff6b9d','#a55eea','#fd9644','#2ed573','#1e90ff'];
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbydgjwldmy3tLmfD1BbNOQU5HULQX0F8ZdIe6VyeoPrdU7-911yC_eZqX4968nC_UbJ/exec';
 
-function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultData(); } catch { return defaultData(); } }
-function save(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+let syncTimeout = null;
+let isSyncing = false;
 
 function defaultData() {
   return {
@@ -593,7 +595,90 @@ function defaultData() {
 }
 function c() { return Math.random().toString(36).substr(2,9); }
 
-let db = load();
+// Guardar localmente siempre (respaldo instantáneo)
+function saveLocal(d) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e) {}
+}
+
+// Cargar desde localStorage (arranque rápido)
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultData(); } catch { return defaultData(); }
+}
+
+// Guardar en Google Sheets (con debounce de 1.5s para no saturar)
+function saveToSheets(d) {
+  saveLocal(d);
+  if(syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    setSyncStatus('syncing');
+    try {
+      const persons = d.persons || [];
+      const tasksWithPersonName = (d.tasks||[]).map(t => {
+        const p = persons.find(p=>p.id===t.personId);
+        return {...t, personName: p?p.name:''};
+      });
+      const payload = {
+        action: 'save',
+        tasks: tasksWithPersonName,
+        categories: d.categories,
+        persons: d.persons,
+        apiKey: d.apiKey||''
+      };
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      const result = await res.json();
+      if(result.ok) setSyncStatus('ok');
+      else setSyncStatus('error');
+    } catch(e) {
+      setSyncStatus('error');
+    }
+  }, 1500);
+}
+
+// Cargar desde Google Sheets al iniciar
+async function loadFromSheets() {
+  setSyncStatus('syncing');
+  try {
+    const res = await fetch(SCRIPT_URL + '?action=load');
+    const result = await res.json();
+    if(result.ok) {
+      const remote = result.data;
+      if(remote) {
+        // Merge: preferir datos remotos pero conservar apiKey local si no hay remota
+        const local = loadLocal();
+        const merged = {
+          tasks: remote.tasks || [],
+          categories: (remote.categories && remote.categories.length) ? remote.categories : local.categories,
+          persons: remote.persons || local.persons || [],
+          apiKey: remote.apiKey || local.apiKey || ''
+        };
+        saveLocal(merged);
+        setSyncStatus('ok');
+        return merged;
+      }
+    }
+    setSyncStatus('error');
+    return loadLocal();
+  } catch(e) {
+    setSyncStatus('error');
+    return loadLocal();
+  }
+}
+
+function setSyncStatus(status) {
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  if(status==='syncing') { el.textContent='☁ Sincronizando...'; el.style.color='var(--text3)'; }
+  else if(status==='ok') { el.textContent='☁ Guardado en Drive'; el.style.color='var(--green)'; }
+  else { el.textContent='☁ Sin conexión (guardado local)'; el.style.color='var(--orange)'; }
+}
+
+// Función principal save que usa Google Sheets
+function save(d) { saveToSheets(d); }
+
+let db = loadLocal(); // arranque rápido con datos locales
 let currentView = 'lista';
 let showCompleted = false;
 let editingId = null;
@@ -1042,7 +1127,7 @@ function renderSettingsCats() {
 function selectCatColor(clr){selectedCatColor=clr;renderSettingsCats();}
 function addCategory(){const name=document.getElementById('newCatName').value.trim();if(!name)return;db.categories.push({id:c(),name,color:selectedCatColor});document.getElementById('newCatName').value='';save(db);renderSettingsCats();populateFilters();}
 function deleteCat(id){db.categories=db.categories.filter(c=>c.id!==id);save(db);renderSettingsCats();populateFilters();renderAll();}
-function saveApiKey(){db.apiKey=document.getElementById('settingsApiKey').value.trim();save(db);alert('API Key guardada correctamente.');}
+function saveApiKey(){db.apiKey=document.getElementById('settingsApiKey').value.trim();save(db);alert('API Key guardada correctamente. Se sincronizará con Google Drive en unos segundos.');}
 function changeApiKey(){openSettings();}
 
 // ======================= IA =======================
@@ -1194,11 +1279,15 @@ function copyMail() {
 }
 
 // ======================= INIT =======================
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', async ()=>{
   initCal('Fecha');
-  renderAll();
-  // Render equipo color options on first open
+  renderAll(); // render rápido con datos locales
   document.getElementById('equipoColorOptions').innerHTML=COLORS.map(clr=>`<div class="color-option ${clr===selectedEquipoColor?'selected':''}" style="background:${clr}" onclick="selectEquipoColor('${clr}')"></div>`).join('');
+
+  // Luego cargar desde Google Sheets y actualizar
+  const remoteDb = await loadFromSheets();
+  db = remoteDb;
+  renderAll();
 });
 </script>
 </body>
