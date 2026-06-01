@@ -379,6 +379,42 @@ textarea.form-input{resize:vertical;min-height:80px;}
   .cal-day{padding:5px 1px;font-size:11px;}
 }
 
+
+/* ===== HILO DE EMAIL ===== */
+.email-thread{display:flex;flex-direction:column;gap:10px;margin-bottom:10px;}
+.email-entry{border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);}
+.email-entry.sent{border-color:rgba(108,99,255,0.3);}
+.email-entry.received{border-color:rgba(0,210,211,0.3);}
+.email-entry-header{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;transition:var(--transition);}
+.email-entry.sent .email-entry-header{background:rgba(108,99,255,0.08);}
+.email-entry.received .email-entry-header{background:rgba(0,210,211,0.08);}
+.email-entry-header:hover{filter:brightness(1.2);}
+.email-entry-icon{font-size:14px;flex-shrink:0;}
+.email-entry-meta{flex:1;min-width:0;}
+.email-entry-type{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+.email-entry.sent .email-entry-type{color:var(--accent2);}
+.email-entry.received .email-entry-type{color:var(--cyan);}
+.email-entry-date{font-size:11px;color:var(--text3);margin-top:1px;}
+.email-entry-preview{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;}
+.email-entry-actions{display:flex;gap:4px;flex-shrink:0;}
+.btn-email-edit{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 4px;transition:var(--transition);}
+.btn-email-edit:hover{color:var(--text2);}
+.btn-email-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:2px 4px;transition:var(--transition);}
+.btn-email-del:hover{color:var(--red);}
+.email-entry-body{padding:10px 12px;border-top:1px solid var(--border);display:none;}
+.email-entry-body.open{display:block;}
+.email-entry-textarea{width:100%;background:var(--surface3);border:1px solid var(--border2);color:var(--text);padding:10px;border-radius:var(--radius-sm);font-size:13px;font-family:'DM Sans',sans-serif;resize:vertical;min-height:100px;line-height:1.6;}
+.email-entry-textarea:focus{outline:none;border-color:var(--accent);}
+.email-entry-date-input{background:var(--surface3);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:var(--radius-sm);font-size:12px;font-family:'DM Sans',sans-serif;margin-bottom:8px;width:100%;}
+.email-entry-date-input:focus{outline:none;border-color:var(--accent);}
+.email-entry-save{padding:5px 14px;background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;margin-top:6px;}
+.add-email-btns{display:flex;gap:8px;margin-top:4px;}
+.btn-add-sent{display:flex;align-items:center;gap:5px;padding:7px 14px;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);color:var(--accent2);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;transition:var(--transition);flex:1;justify-content:center;}
+.btn-add-sent:hover{background:rgba(108,99,255,0.2);}
+.btn-add-received{display:flex;align-items:center;gap:5px;padding:7px 14px;background:rgba(0,210,211,0.1);border:1px solid rgba(0,210,211,0.3);color:var(--cyan);border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;transition:var(--transition);flex:1;justify-content:center;}
+.btn-add-received:hover{background:rgba(0,210,211,0.2);}
+.email-thread-empty{font-size:12px;color:var(--text3);padding:12px;text-align:center;background:var(--surface2);border-radius:var(--radius-sm);border:1px dashed var(--border2);}
+
 /* ===== BRIEFING DIARIO ===== */
 .briefing-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity 0.3s;}
 .briefing-overlay.open{opacity:1;pointer-events:all;}
@@ -586,6 +622,15 @@ textarea.form-input{resize:vertical;min-height:80px;}
         <div class="add-subtask-row">
           <input class="add-subtask-input" id="subtaskInput" placeholder="Nueva subtarea..." onkeydown="if(event.key==='Enter')addSubtask()" />
           <button class="btn-add-sub" onclick="addSubtask()">+</button>
+        </div>
+      </div>
+
+      <div class="form-group" id="emailThreadSection">
+        <label class="form-label">📬 Hilo de conversación por email</label>
+        <div class="email-thread" id="emailThreadList"></div>
+        <div class="add-email-btns">
+          <button class="btn-add-sent" onclick="addEmailEntry('sent')">📤 Agregar enviado</button>
+          <button class="btn-add-received" onclick="addEmailEntry('received')">📥 Agregar respuesta</button>
         </div>
       </div>
       <div class="form-group" id="historySection">
@@ -1107,10 +1152,11 @@ function toggleCompleted(){showCompleted=!showCompleted;document.getElementById(
 
 // ======================= MODAL =======================
 function openModal(id){
-  editingId=id||null; editingSubtasks=[]; editingHistory=[];
+  editingId=id||null; editingSubtasks=[]; editingHistory=[]; editingEmailThread=[];
   const t=id?(db.tasks||[]).find(t=>t.id===id):null;
   document.getElementById('modalTitle').textContent=t?'Editar pendiente':'Nuevo pendiente';
   document.getElementById('historySection').classList.toggle('hidden',!id);
+  document.getElementById('emailThreadSection').classList.toggle('hidden',!id);
 
   const catSel=document.getElementById('fCat');
   catSel.innerHTML=['<option value="">— sin categoría —</option>',...(db.categories||[]).map(c=>`<option value="${c.name}">${c.name}</option>`)].join('');
@@ -1132,6 +1178,7 @@ function openModal(id){
     document.getElementById('fNotes').value=t.notes||'';
     editingSubtasks=JSON.parse(JSON.stringify(t.subtasks||[]));
     editingHistory=JSON.parse(JSON.stringify(t.history||[]));
+    editingEmailThread=JSON.parse(JSON.stringify(t.emailThread||[]));
   } else {
     document.getElementById('fTitle').value='';
     catSel.value=''; document.getElementById('fPrio').value='Medio';
@@ -1139,7 +1186,7 @@ function openModal(id){
     setCalValue('Fecha',''); setCalValue('Inicio',todayIso());
     document.getElementById('fAviso').value=''; document.getElementById('fBlocked').value=''; document.getElementById('fNotes').value='';
   }
-  renderSubtasks(); renderHistoryList();
+  renderSubtasks(); renderHistoryList(); renderEmailThread();
   document.getElementById('modalOverlay').classList.add('open');
   document.getElementById('fTitle').focus();
 }
@@ -1361,11 +1408,15 @@ async function generateMailForTask(taskId){
   const diff=t.dueDate?daysDiff(t.dueDate):null;
   const dateInfo=diff!==null?(diff<0?`vencía hace ${Math.abs(diff)} día(s)`:diff===0?'vence HOY':`vence en ${diff} día(s)`):'sin fecha definida';
   const firstName=person.name.split(' ')[0];
+  const threadContext = buildEmailThreadContext(t.emailThread||[]);
+  const isFollowUp = (t.emailThread||[]).length > 0;
   const resp=await callIA(`Redactá un email de seguimiento dirigido a ${person.name} sobre este pendiente:
 TEMA: ${t.title}
 ${t.dueDate?'FECHA: '+dateInfo:''}
 ${t.blockedReason?'CONTEXTO: '+t.blockedReason:''}
-${t.notes?'NOTAS: '+t.notes:''}
+${t.notes?'NOTAS: '+t.notes:''}${threadContext}
+
+${isFollowUp?`IMPORTANTE: Este es un follow-up. Hay conversación previa arriba. Leé todo el hilo antes de redactar. El nuevo email debe retomar desde donde quedó la última respuesta, sin repetir lo que ya se dijo. Si la otra persona dio una fecha o un compromiso, mencionalo.`:''}
 
 ESTILO OBLIGATORIO:
 - Primera línea: "Asunto: ..." (breve y directo)
@@ -1376,7 +1427,7 @@ ESTILO OBLIGATORIO:
 - Máximo 3-4 oraciones en el cuerpo
 - Cerrá ÚNICAMENTE con "Muchas gracias"
 - Tono: profesional pero cercano, directo`,
-  'Cuando redactes emails imitá exactamente el estilo indicado.');
+  'Cuando redactes emails imitá exactamente el estilo indicado. Si hay historial de conversación, úsalo para dar contexto real al nuevo email.');
   contentEl.textContent=resp; contentEl.classList.remove('loading'); currentMailText=resp;
 }
 function closeMailModal(){document.getElementById('mailOverlay').classList.remove('open');}
@@ -1389,6 +1440,86 @@ function copyMail(){
   }).catch(()=>alert('No se pudo copiar automáticamente. Seleccioná el texto manualmente.'));
 }
 
+
+
+// ======================= HILO DE EMAIL =======================
+let editingEmailThread = [];
+
+function renderEmailThread() {
+  const container = document.getElementById('emailThreadList');
+  if(!editingEmailThread.length) {
+    container.innerHTML = '<div class="email-thread-empty">Sin emails registrados. Usá los botones para agregar enviados o respuestas.</div>';
+    return;
+  }
+  container.innerHTML = editingEmailThread.map((e,i) => {
+    const preview = (e.text||'').substring(0,60).replace(/\n/g,' ');
+    return `<div class="email-entry ${e.type}" id="emailEntry_${i}">
+      <div class="email-entry-header" onclick="toggleEmailBody(${i})">
+        <div class="email-entry-icon">${e.type==='sent'?'📤':'📥'}</div>
+        <div class="email-entry-meta">
+          <div class="email-entry-type">${e.type==='sent'?'Enviado por mí':'Respuesta recibida'}</div>
+          <div class="email-entry-date">${e.date||'Sin fecha'}</div>
+          ${e.text?`<div class="email-entry-preview">${escHtml(preview)}${e.text.length>60?'...':''}</div>`:''}
+        </div>
+        <div class="email-entry-actions">
+          <button class="btn-email-edit" onclick="event.stopPropagation();toggleEmailBody(${i})" title="Editar">✏️</button>
+          <button class="btn-email-del" onclick="event.stopPropagation();deleteEmailEntry(${i})" title="Eliminar">×</button>
+        </div>
+      </div>
+      <div class="email-entry-body" id="emailBody_${i}">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Fecha real de envío/recepción:</div>
+        <input class="email-entry-date-input" type="text" placeholder="ej: 15/06/2026" value="${escHtml(e.date||'')}" onchange="updateEmailDate(${i},this.value)" />
+        <textarea class="email-entry-textarea" placeholder="${e.type==='sent'?'Pegá el texto del email que enviaste...':'Pegá el texto de la respuesta que recibiste...'}" onchange="updateEmailText(${i},this.value)">${escHtml(e.text||'')}</textarea>
+        <button class="email-entry-save" onclick="saveEmailEntry(${i})">Guardar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleEmailBody(i) {
+  const body = document.getElementById('emailBody_'+i);
+  if(body) body.classList.toggle('open');
+}
+
+function addEmailEntry(type) {
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  editingEmailThread.push({id:c(), type, date:dateStr, text:''});
+  renderEmailThread();
+  // Auto-open the new entry
+  setTimeout(()=>{
+    const idx = editingEmailThread.length-1;
+    const body = document.getElementById('emailBody_'+idx);
+    if(body) body.classList.add('open');
+    const ta = body?.querySelector('.email-entry-textarea');
+    if(ta) ta.focus();
+  },50);
+}
+
+function updateEmailDate(i,val){ editingEmailThread[i].date = val; }
+function updateEmailText(i,val){ editingEmailThread[i].text = val; }
+function saveEmailEntry(i){
+  // Read current values from DOM
+  const body = document.getElementById('emailBody_'+i);
+  if(body){
+    const dateInput = body.querySelector('.email-entry-date-input');
+    const textarea = body.querySelector('.email-entry-textarea');
+    if(dateInput) editingEmailThread[i].date = dateInput.value;
+    if(textarea) editingEmailThread[i].text = textarea.value;
+  }
+  renderEmailThread();
+}
+function deleteEmailEntry(i){
+  if(!confirm('¿Eliminar este email del hilo?')) return;
+  editingEmailThread.splice(i,1);
+  renderEmailThread();
+}
+
+function buildEmailThreadContext(thread) {
+  if(!thread||!thread.length) return '';
+  return '\n\nHISTORIAL DE CONVERSACIÓN POR EMAIL (del más antiguo al más reciente):\n' +
+    thread.map(e=>`[${e.type==='sent'?'ENVIADO':'RECIBIDO'} - ${e.date||'sin fecha'}]\n${e.text||'(sin texto)'}`).join('\n---\n');
+}
 
 // ======================= BRIEFING DIARIO =======================
 function shouldShowBriefing() {
