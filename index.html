@@ -723,6 +723,7 @@ let showCompleted = false;
 let editingId = null;
 let editingSubtasks = [];
 let editingHistory = [];
+let editingEmailThread = [];
 let selectedCatColor = COLORS[0];
 let selectedEquipoColor = COLORS[2];
 let iaOpen = false;
@@ -1220,6 +1221,11 @@ function addComment(){
 }
 
 function saveTask(){
+  // First read any open email entries from DOM
+  document.querySelectorAll('.email-entry-body.open').forEach(b => {
+    const idx = parseInt(b.id.replace('emailBody_',''));
+    if(!isNaN(idx)) _readEmailFromDOM(idx);
+  });
   const title=document.getElementById('fTitle').value.trim();
   if(!title){document.getElementById('fTitle').style.borderColor='var(--red)';return;}
   document.getElementById('fTitle').style.borderColor='';
@@ -1239,7 +1245,7 @@ function saveTask(){
     editingHistory.push({id:c(),type:'change',text:'Pendiente creado',date:new Date().toISOString()});
   }
 
-  const data={title,category:document.getElementById('fCat').value,priority:newPrio,status:newStatus,personId:document.getElementById('fPerson').value,dueDate:newDate,startDate:sanitizeIso(document.getElementById('fDateInicio').value),aviso:document.getElementById('fAviso').value,blockedReason:document.getElementById('fBlocked').value.trim(),notes:document.getElementById('fNotes').value.trim(),subtasks:editingSubtasks,history:editingHistory,completed:newStatus==='Completado'};
+  const data={title,category:document.getElementById('fCat').value,priority:newPrio,status:newStatus,personId:document.getElementById('fPerson').value,dueDate:newDate,startDate:sanitizeIso(document.getElementById('fDateInicio').value),aviso:document.getElementById('fAviso').value,blockedReason:document.getElementById('fBlocked').value.trim(),notes:document.getElementById('fNotes').value.trim(),subtasks:editingSubtasks,history:editingHistory,completed:newStatus==='Completado',emailThread:editingEmailThread};
 
   if(editingId){const idx=(db.tasks||[]).findIndex(t=>t.id===editingId);if(idx>=0)db.tasks[idx]={...db.tasks[idx],...data};}
   else db.tasks.unshift({id:c(),createdAt:new Date().toISOString(),...data});
@@ -1443,73 +1449,97 @@ function copyMail(){
 
 
 // ======================= HILO DE EMAIL =======================
-let editingEmailThread = [];
-
 function renderEmailThread() {
   const container = document.getElementById('emailThreadList');
+  if(!container) return;
   if(!editingEmailThread.length) {
     container.innerHTML = '<div class="email-thread-empty">Sin emails registrados. Usá los botones para agregar enviados o respuestas.</div>';
     return;
   }
   container.innerHTML = editingEmailThread.map((e,i) => {
-    const preview = (e.text||'').substring(0,60).replace(/\n/g,' ');
+    const preview = (e.text||'').substring(0,60).replace(/[\n\r]/g,' ');
     return `<div class="email-entry ${e.type}" id="emailEntry_${i}">
       <div class="email-entry-header" onclick="toggleEmailBody(${i})">
         <div class="email-entry-icon">${e.type==='sent'?'📤':'📥'}</div>
         <div class="email-entry-meta">
           <div class="email-entry-type">${e.type==='sent'?'Enviado por mí':'Respuesta recibida'}</div>
           <div class="email-entry-date">${e.date||'Sin fecha'}</div>
-          ${e.text?`<div class="email-entry-preview">${escHtml(preview)}${e.text.length>60?'...':''}</div>`:''}
+          ${e.text?`<div class="email-entry-preview">${escHtml(preview)}${(e.text||'').length>60?'...':''}</div>`:'<div class="email-entry-preview" style="color:var(--text3);font-style:italic">Sin texto aún — hacé clic para editar</div>'}
         </div>
         <div class="email-entry-actions">
-          <button class="btn-email-edit" onclick="event.stopPropagation();toggleEmailBody(${i})" title="Editar">✏️</button>
           <button class="btn-email-del" onclick="event.stopPropagation();deleteEmailEntry(${i})" title="Eliminar">×</button>
         </div>
       </div>
       <div class="email-entry-body" id="emailBody_${i}">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Fecha real de envío/recepción:</div>
-        <input class="email-entry-date-input" type="text" placeholder="ej: 15/06/2026" value="${escHtml(e.date||'')}" onchange="updateEmailDate(${i},this.value)" />
-        <textarea class="email-entry-textarea" placeholder="${e.type==='sent'?'Pegá el texto del email que enviaste...':'Pegá el texto de la respuesta que recibiste...'}" onchange="updateEmailText(${i},this.value)">${escHtml(e.text||'')}</textarea>
-        <button class="email-entry-save" onclick="saveEmailEntry(${i})">Guardar</button>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px">📅 Fecha real de ${e.type==='sent'?'envío':'recepción'}:</div>
+        <input class="email-entry-date-input" id="emailDate_${i}" type="text" placeholder="ej: 15/06/2026" value="${escHtml(e.date||'')}" />
+        <div style="font-size:11px;color:var(--text3);margin-bottom:6px;margin-top:10px">📝 Texto del email:</div>
+        <textarea class="email-entry-textarea" id="emailText_${i}" placeholder="${e.type==='sent'?'Pegá el texto del email que enviaste (podés ajustarlo al texto real que enviaste)...':'Pegá el texto de la respuesta que recibiste...'}">${escHtml(e.text||'')}</textarea>
+        <button class="email-entry-save" onclick="saveEmailEntry(${i})">✓ Guardar</button>
       </div>
     </div>`;
   }).join('');
 }
 
 function toggleEmailBody(i) {
+  // Save any open entries first before toggling
+  document.querySelectorAll('.email-entry-body.open').forEach(b => {
+    const idx = parseInt(b.id.replace('emailBody_',''));
+    if(!isNaN(idx) && idx !== i) _readEmailFromDOM(idx);
+  });
   const body = document.getElementById('emailBody_'+i);
-  if(body) body.classList.toggle('open');
+  if(body) {
+    const wasOpen = body.classList.contains('open');
+    document.querySelectorAll('.email-entry-body').forEach(b=>b.classList.remove('open'));
+    if(!wasOpen) body.classList.add('open');
+  }
+}
+
+function _readEmailFromDOM(i) {
+  const dateEl = document.getElementById('emailDate_'+i);
+  const textEl = document.getElementById('emailText_'+i);
+  if(dateEl && editingEmailThread[i]) editingEmailThread[i].date = dateEl.value.trim();
+  if(textEl && editingEmailThread[i]) editingEmailThread[i].text = textEl.value.trim();
+}
+
+function saveEmailEntry(i) {
+  _readEmailFromDOM(i);
+  if(!editingEmailThread[i].text && !editingEmailThread[i].date) {
+    alert('Agregá al menos el texto del email antes de guardar.');
+    return;
+  }
+  // Visual feedback
+  const btn = document.querySelector(`#emailBody_${i} .email-entry-save`);
+  if(btn) { btn.textContent = '✓ Guardado!'; btn.style.background='var(--green)'; setTimeout(()=>{btn.textContent='✓ Guardar';btn.style.background='';},1500); }
+  renderEmailThread();
+  // Re-open the entry to keep editing visible
+  setTimeout(()=>{
+    const body = document.getElementById('emailBody_'+i);
+    if(body) body.classList.add('open');
+  }, 50);
 }
 
 function addEmailEntry(type) {
+  // Save any currently open entry first
+  document.querySelectorAll('.email-entry-body.open').forEach(b => {
+    const idx = parseInt(b.id.replace('emailBody_',''));
+    if(!isNaN(idx)) _readEmailFromDOM(idx);
+  });
   const today = new Date();
   const dateStr = today.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
   editingEmailThread.push({id:c(), type, date:dateStr, text:''});
   renderEmailThread();
-  // Auto-open the new entry
   setTimeout(()=>{
     const idx = editingEmailThread.length-1;
     const body = document.getElementById('emailBody_'+idx);
     if(body) body.classList.add('open');
-    const ta = body?.querySelector('.email-entry-textarea');
+    const ta = document.getElementById('emailText_'+idx);
     if(ta) ta.focus();
-  },50);
+  },80);
 }
 
-function updateEmailDate(i,val){ editingEmailThread[i].date = val; }
-function updateEmailText(i,val){ editingEmailThread[i].text = val; }
-function saveEmailEntry(i){
-  // Read current values from DOM
-  const body = document.getElementById('emailBody_'+i);
-  if(body){
-    const dateInput = body.querySelector('.email-entry-date-input');
-    const textarea = body.querySelector('.email-entry-textarea');
-    if(dateInput) editingEmailThread[i].date = dateInput.value;
-    if(textarea) editingEmailThread[i].text = textarea.value;
-  }
-  renderEmailThread();
-}
 function deleteEmailEntry(i){
+  _readEmailFromDOM(i); // save before deleting (not needed but safe)
   if(!confirm('¿Eliminar este email del hilo?')) return;
   editingEmailThread.splice(i,1);
   renderEmailThread();
@@ -1517,8 +1547,9 @@ function deleteEmailEntry(i){
 
 function buildEmailThreadContext(thread) {
   if(!thread||!thread.length) return '';
-  return '\n\nHISTORIAL DE CONVERSACIÓN POR EMAIL (del más antiguo al más reciente):\n' +
-    thread.map(e=>`[${e.type==='sent'?'ENVIADO':'RECIBIDO'} - ${e.date||'sin fecha'}]\n${e.text||'(sin texto)'}`).join('\n---\n');
+  return '\n\nHISTORIAL DE CONVERSACIÓN POR EMAIL (cronológico, del más antiguo al más reciente):\n' +
+    thread.map(e=>`[${e.type==='sent'?'ENVIADO POR MÍ':'RESPUESTA RECIBIDA'} - ${e.date||'sin fecha'}]\n${e.text||'(sin texto)'}`)
+    .join('\n---\n');
 }
 
 // ======================= BRIEFING DIARIO =======================
