@@ -712,7 +712,7 @@ textarea.form-input{resize:vertical;min-height:80px;}
 // ======================= CONSTANTS =======================
 const STORAGE_KEY = 'cmdcenter_v4';
 const COLORS = ['#6c63ff','#ff4757','#ff9f43','#26de81','#00d2d3','#ff6b9d','#a55eea','#fd9644','#2ed573','#1e90ff'];
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlPyTyEE2hbaoo5OKP-k5dXFOlxkEWpOgI8_ePRun-akd-UF9G__z0LaUr8c1I41Po/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhDscTeXa63y182pCPtDUGS9jWbcW--H45L-h1_9lPlWRBYxkmEH74eWwPa9k3voy6/exec';
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DAYS_ES = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
 
@@ -757,7 +757,7 @@ function save(d){
     setSyncStatus('syncing');
     try{
       const persons = d.persons||[];
-      const payload={action:'save',tasks:(d.tasks||[]).map(t=>({...t,personName:(persons.find(p=>p.id===t.personId)||{}).name||''})),categories:d.categories,persons:d.persons,apiKey:d.apiKey||''};
+      const payload={action:'save',tasks:(d.tasks||[]).map(t=>({...t,personName:(persons.find(p=>p.id===t.personId)||{}).name||'',emailThread:t.emailThread||[]})),categories:d.categories,persons:d.persons,apiKey:d.apiKey||''};
       const res=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)});
       const r=await res.json();
       setSyncStatus(r.ok?'ok':'error');
@@ -772,7 +772,14 @@ async function loadFromSheets(){
     const r=await res.json();
     if(r.ok&&r.data){
       const local=loadLocal();
-      const merged={tasks:r.data.tasks||[],categories:(r.data.categories&&r.data.categories.length)?r.data.categories:local.categories,persons:r.data.persons||local.persons||[],apiKey:r.data.apiKey||local.apiKey||''};
+      // Merge remote tasks but preserve emailThread from local (Sheets doesn't store it yet)
+      const remoteTasks = r.data.tasks||[];
+      const localTasks = local.tasks||[];
+      const mergedTasks = remoteTasks.map(rt => {
+        const lt = localTasks.find(l=>l.id===rt.id);
+        return lt ? {...rt, emailThread: lt.emailThread||rt.emailThread||[]} : rt;
+      });
+      const merged={tasks:mergedTasks,categories:(r.data.categories&&r.data.categories.length)?r.data.categories:local.categories,persons:r.data.persons||local.persons||[],apiKey:r.data.apiKey||local.apiKey||''};
       saveLocal(merged); setSyncStatus('ok'); return merged;
     }
     setSyncStatus('error'); return loadLocal();
