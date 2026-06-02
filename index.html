@@ -462,10 +462,10 @@ textarea.form-input{resize:vertical;min-height:80px;}
 </header>
 
 <div class="stats-bar">
-  <div class="stat-item" onclick="setView('lista')" title="Ver activos"><div class="stat-value cyan" id="statActivos">0</div><div class="stat-label">Activos</div></div>
+  <div class="stat-item" onclick="filterByUrgency('active')" title="Ver activos"><div class="stat-value cyan" id="statActivos">0</div><div class="stat-label">Activos</div></div>
   <div class="stat-item" onclick="filterByUrgency('overdue')" title="Ver vencidos"><div class="stat-value red" id="statVencidos">0</div><div class="stat-label">Vencidos</div></div>
   <div class="stat-item" onclick="filterByUrgency('blocked')" title="Ver bloqueados"><div class="stat-value orange" id="statBloqueados">0</div><div class="stat-label">Bloqueados</div></div>
-  <div class="stat-item" onclick="toggleCompleted();setView('lista')" title="Ver completados"><div class="stat-value green" id="statCompletados">0</div><div class="stat-label">Completados</div></div>
+  <div class="stat-item" onclick="filterByUrgency('completed')" title="Ver completados"><div class="stat-value green" id="statCompletados">0</div><div class="stat-label">Completados</div></div>
 </div>
 
 <div class="controls">
@@ -895,7 +895,10 @@ function setCalValue(name,rawVal){
 function getUrgency(task){
   if(task.completed) return 'completed';
   if(!task.dueDate) return 'none';
-  const diff=daysDiff(task.dueDate);
+  const iso=sanitizeIso(task.dueDate);
+  if(!iso) return 'none';
+  const diff=daysDiff(iso);
+  if(diff===null||isNaN(diff)) return 'none';
   if(diff<0) return 'overdue';
   if(diff===0) return 'today';
   if(diff<=2) return 'urgent';
@@ -904,7 +907,10 @@ function getUrgency(task){
 }
 function getDaysLabel(task){
   if(!task.dueDate) return '';
-  const diff=daysDiff(task.dueDate);
+  const iso = sanitizeIso(task.dueDate);
+  if(!iso) return '';
+  const diff=daysDiff(iso);
+  if(diff===null||isNaN(diff)) return '';
   if(diff<0) return `Venció hace ${Math.abs(diff)} día${Math.abs(diff)!==1?'s':''}`;
   if(diff===0) return 'Vence hoy';
   if(diff===1) return 'Vence mañana';
@@ -924,12 +930,25 @@ function getFiltered(){
   const person=document.getElementById('filterPerson')?.value||'';
   const search=(document.getElementById('searchInput')?.value||'').toLowerCase().trim();
   return (db.tasks||[]).filter(t=>{
-    if(!showCompleted&&t.completed) return false;
+    // Quick filter from stat bar — shows ONLY that group
+    if(quickFilterUrgency==='completed'){
+      if(!t.completed) return false;
+    } else if(quickFilterUrgency==='overdue'){
+      const iso=sanitizeIso(t.dueDate);
+      const d=iso?daysDiff(iso):null;
+      if(!(d!==null&&!isNaN(d)&&d<0&&!t.completed)) return false;
+    } else if(quickFilterUrgency==='blocked'){
+      if(t.completed) return false;
+      if(!(t.status==='Bloqueado'||t.blockedReason)) return false;
+    } else if(quickFilterUrgency==='active'){
+      if(t.completed) return false;
+    } else {
+      // Normal mode: hide completed unless showCompleted is on
+      if(!showCompleted&&t.completed) return false;
+    }
     if(cat&&t.category!==cat) return false;
     if(prio&&t.priority!==prio) return false;
     if(person&&t.personId!==person) return false;
-    if(quickFilterUrgency==='overdue'){const d=daysDiff(t.dueDate);if(!(d!==null&&d<0&&!t.completed))return false;}
-    if(quickFilterUrgency==='blocked'&&!(t.status==='Bloqueado'||t.blockedReason)) return false;
     if(search){
       const hay=(t.title+' '+(t.notes||'')+' '+(t.category||'')+' '+(t.blockedReason||'')).toLowerCase();
       if(!hay.includes(search)) return false;
@@ -939,9 +958,8 @@ function getFiltered(){
 }
 
 function filterByUrgency(type){
-  quickFilterUrgency=type;
-  if(type==='blocked'&&!showCompleted) showCompleted=false;
-  renderAll();
+  quickFilterUrgency = (quickFilterUrgency===type) ? null : type;
+  setView('lista');
 }
 
 // ======================= RENDER =======================
@@ -1387,7 +1405,7 @@ async function iaFollowup(personId){
   addIAMessage('user',`Email de follow-up para ${person.name}`);
   addIAMessage('assistant','Redactando email...',true);
   const firstName=person.name.split(' ')[0];
-  updateLastIA(await callIA(`Redactá un email de seguimiento para ${person.name} sobre estos pendientes:\n${list}\n\nIMPORTANTE - Estilo de escritura OBLIGATORIO:\n- Asunto en primera línea: "Asunto: ..." (breve, sin mencionar urgencia ni prioridad)\n- Empezá con "Hola ${firstName}, cómo estás?"\n- Cuerpo en texto corrido, natural, conversacional\n- NUNCA uses negritas, campos estructurados, etiquetas como "Estado actual:", "Acción requerida:", "Nota importante:", "Prioridad crítica"\n- Si hay fechas, mencionarlas dentro del texto de forma natural\n- Cerrá ÚNICAMENTE con "Muchas gracias"\n- Tono: profesional pero cercano, directo y conciso`));
+  updateLastIA(await callIA(`Redactá un email de seguimiento para ${person.name} sobre estos pendientes:\n${list}\n\nESTILO OBLIGATORIO:\n- Asunto en primera línea: "Asunto: ..." (breve)\n- Empezá con "Hola ${firstName}, cómo estás?"\n- Texto corrido, natural, sin negritas ni campos estructurados\n- NUNCA menciones fechas de vencimiento — son fechas internas que el destinatario no conoce\n- Si necesitás transmitir urgencia usá "a la brevedad" o "cuando puedas"\n- NUNCA uses "Estado actual:", "Acción requerida:", "Prioridad crítica"\n- Cerrá ÚNICAMENTE con "Muchas gracias"\n- Tono: profesional pero cercano y directo`));
 }
 async function sendIAMessage(){
   const inp=document.getElementById('iaInput'),text=inp.value.trim(); if(!text) return;
@@ -1425,22 +1443,25 @@ async function generateMailForTask(taskId){
   const isFollowUp = (t.emailThread||[]).length > 0;
   const resp=await callIA(`Redactá un email de seguimiento dirigido a ${person.name} sobre este pendiente:
 TEMA: ${t.title}
-${t.dueDate?'FECHA: '+dateInfo:''}
-${t.blockedReason?'CONTEXTO: '+t.blockedReason:''}
-${t.notes?'NOTAS: '+t.notes:''}${threadContext}
+${t.blockedReason?'CONTEXTO DE BLOQUEO: '+t.blockedReason:''}
+${t.notes?'NOTAS (podés usar este contenido en el email): '+t.notes:''}${threadContext}
 
-${isFollowUp?`IMPORTANTE: Este es un follow-up. Hay conversación previa arriba. Leé todo el hilo antes de redactar. El nuevo email debe retomar desde donde quedó la última respuesta, sin repetir lo que ya se dijo. Si la otra persona dio una fecha o un compromiso, mencionalo.`:''}
+${isFollowUp?'IMPORTANTE: Este es un follow-up. Leé todo el hilo antes de redactar. Retomá desde donde quedó la última respuesta sin repetir lo ya dicho. Si la otra persona dio una fecha o compromiso, mencionalo.':''}
+
+REGLAS ESTRICTAS DE CONTENIDO:
+- NUNCA menciones fechas de vencimiento ni plazos internos a menos que el usuario los haya escrito explícitamente en las NOTAS o en el TEMA
+- La fecha de vencimiento es información interna del remitente — el destinatario no la conoce ni debe conocerla
+- Si necesitás transmitir urgencia, hacelo con palabras como "a la brevedad", "cuando puedas", "lo antes posible" — nunca con fechas concretas
 
 ESTILO OBLIGATORIO:
 - Primera línea: "Asunto: ..." (breve y directo)
 - Empezá con "Hola ${firstName}, cómo estás?"
 - Texto corrido, natural, sin negritas, sin campos estructurados
 - NUNCA uses "Estado actual:", "Acción requerida:", "Nota importante:", "Prioridad crítica"
-- Si hay fecha, mencionarla dentro del texto de forma natural
 - Máximo 3-4 oraciones en el cuerpo
 - Cerrá ÚNICAMENTE con "Muchas gracias"
 - Tono: profesional pero cercano, directo`,
-  'Cuando redactes emails imitá exactamente el estilo indicado. Si hay historial de conversación, úsalo para dar contexto real al nuevo email.');
+  'Cuando redactes emails: 1) nunca incluyas fechas de vencimiento internas, 2) imitá el estilo indicado, 3) si hay historial úsalo como contexto real.');
   contentEl.textContent=resp; contentEl.classList.remove('loading'); currentMailText=resp;
 }
 function closeMailModal(){document.getElementById('mailOverlay').classList.remove('open');}
